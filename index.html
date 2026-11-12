@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f4ef">
+  <title>交易前检查｜投资心理学</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #18231f;
+      --muted: #67736d;
+      --paper: #f5f4ef;
+      --card: #fffefa;
+      --line: #e5e6dd;
+      --green: #216b50;
+      --green-dark: #174c3a;
+      --mint: #e9f3ec;
+      --amber: #fff5df;
+      --amber-line: #f0dfb6;
+      --shadow: 0 16px 42px rgba(31, 48, 40, .07);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font: 15px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    }
+    button, input, textarea { font: inherit; }
+    .shell { width: min(1020px, calc(100% - 36px)); margin: 0 auto; padding: 36px 0 64px; }
+    .topline { display: flex; align-items: center; gap: 9px; color: var(--green); font-size: 12px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+    .topline::before { content: ""; width: 23px; height: 2px; background: var(--green); }
+    header { max-width: 730px; margin: 20px 0 28px; }
+    h1 { margin: 0; font-size: clamp(32px, 5vw, 50px); line-height: 1.08; letter-spacing: -.045em; font-weight: 730; }
+    .intro { margin: 15px 0 0; color: var(--muted); font-size: 16px; max-width: 670px; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 22px; align-items: start; }
+    .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
+    .form-panel { padding: 24px; }
+    .form-head { display: flex; justify-content: space-between; align-items: start; gap: 16px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+    .form-head h2 { margin: 0; font-size: 18px; letter-spacing: -.02em; }
+    .form-head p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+    .date-wrap { flex: 0 0 155px; }
+    .field { margin-top: 22px; }
+    .field-top { display: flex; align-items: baseline; gap: 9px; margin-bottom: 8px; }
+    .num { display: grid; place-items: center; flex: 0 0 23px; height: 23px; border-radius: 50%; background: var(--mint); color: var(--green-dark); font-size: 12px; font-weight: 750; }
+    label, .label { font-weight: 680; font-size: 14px; }
+    .hint { margin: 0 0 9px 32px; color: var(--muted); font-size: 12px; }
+    input, textarea { display: block; width: 100%; border: 1px solid #dfe2d9; border-radius: 9px; padding: 11px 12px; background: #fff; color: var(--ink); outline: none; transition: border-color .15s, box-shadow .15s; }
+    input:focus, textarea:focus { border-color: #7aaa92; box-shadow: 0 0 0 3px rgba(33,107,80,.1); }
+    input::placeholder, textarea::placeholder { color: #9aa39d; }
+    textarea { min-height: 76px; resize: vertical; }
+    .date-wrap input { padding: 8px 10px; font-size: 13px; }
+    .mindcheck { padding: 20px; background: var(--amber); border: 1px solid var(--amber-line); border-radius: 14px; }
+    .mindcheck h2 { margin: 0; font-size: 16px; }
+    .mindcheck .sub { margin: 4px 0 13px; color: #796a4b; font-size: 12px; }
+    .checkrow { display: flex; gap: 10px; align-items: start; padding: 11px 0; border-top: 1px solid rgba(121,106,75,.16); font-size: 13px; }
+    .checkrow input { flex: 0 0 16px; width: 16px; height: 16px; margin: 3px 0 0; accent-color: var(--green); }
+    .checkrow strong { display: block; font-size: 13px; }
+    .checkrow span { color: #70654f; }
+    .aside-note { margin-top: 16px; padding: 17px 18px; }
+    .aside-note h3 { margin: 0 0 7px; font-size: 14px; }
+    .aside-note p { margin: 0; color: var(--muted); font-size: 12px; }
+    .aside-note p + p { margin-top: 9px; }
+    .status { min-height: 19px; margin: 13px 0 0; color: var(--muted); font-size: 12px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 13px; }
+    button { border: 0; border-radius: 9px; padding: 10px 14px; cursor: pointer; font-weight: 650; transition: transform .12s, background .12s; }
+    button:hover { transform: translateY(-1px); }
+    .primary { background: var(--green); color: white; }
+    .primary:hover { background: var(--green-dark); }
+    .secondary { background: #edf0ea; color: var(--ink); }
+    .secondary:hover { background: #e2e7df; }
+    .quiet { background: transparent; color: var(--muted); padding-inline: 10px; }
+    .quiet:hover { background: #f1f1eb; }
+    footer { margin-top: 23px; color: #7c857f; font-size: 11px; }
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 24px, 600px); padding-top: 25px; }
+      .layout { grid-template-columns: 1fr; }
+      .form-panel { padding: 18px; }
+      .date-wrap { flex-basis: 135px; }
+    }
+    @media (max-width: 430px) {
+      .form-head { flex-direction: column; }
+      .date-wrap { flex-basis: auto; width: 100%; }
+      .actions button { flex: 1; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="topline">投资心理学 · 交易日志</div>
+    <header>
+      <h1>先写计划，<br>再做决定。</h1>
+      <p class="intro">用几分钟把交易理由、触发条件和风险边界写下来。盘中情绪变化时，回到自己事前定下的规则。</p>
+    </header>
+
+    <div class="layout">
+      <section class="panel form-panel" aria-labelledby="plan-title">
+        <div class="form-head">
+          <div>
+            <h2 id="plan-title">交易前检查表</h2>
+            <p>写清楚就够了，不需要写成长篇分析。</p>
+          </div>
+          <div class="date-wrap">
+            <label for="trade-date">记录日期</label>
+            <input id="trade-date" data-field="trade-date" type="date">
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-top"><span class="num">1</span><label for="instrument">交易什么、做多还是做空？</label></div>
+          <p class="hint">写标的 / 代码、方向，以及计划交易的周期。</p>
+          <textarea id="instrument" data-field="instrument" placeholder="例如：QQQ，做多，按日线计划"></textarea>
+        </div>
+        <div class="field">
+          <div class="field-top"><span class="num">2</span><label for="reason">为什么考虑这笔交易？</label></div>
+          <p class="hint">写下主要依据，以及什么证据会推翻你的判断。</p>
+          <textarea id="reason" data-field="reason" placeholder="我的交易假设是……主要依据是……"></textarea>
+        </div>
+        <div class="field">
+          <div class="field-top"><span class="num">3</span><label for="entry">什么条件触发进场？</label></div>
+          <p class="hint">尽量写成可观察的条件，而不是“感觉差不多”。</p>
+          <textarea id="entry" data-field="entry" placeholder="当……发生 / 收盘确认……时，我才考虑进场"></textarea>
+        </div>
+        <div class="field">
+          <div class="field-top"><span class="num">4</span><label for="invalid">什么情况说明判断失效，在哪里止损？</label></div>
+          <p class="hint">写明确的价格或规则，并说明它对应哪条交易假设。</p>
+          <textarea id="invalid" data-field="invalid" placeholder="如果……，说明判断失效；止损规则是……"></textarea>
+        </div>
+        <div class="field">
+          <div class="field-top"><span class="num">5</span><label for="risk">仓位多大，最多亏多少？</label></div>
+          <p class="hint">写金额或账户比例；杠杆产品也要按止损距离核算风险。</p>
+          <textarea id="risk" data-field="risk" placeholder="计划仓位……；触发止损时，预计最多亏损……"></textarea>
+        </div>
+        <div class="field">
+          <div class="field-top"><span class="num">6</span><label for="exit">进场后怎么退出？止损后何时重新评估？</label></div>
+          <p class="hint">写止盈、移动止损或持仓期限等规则，以及重新评估的条件。</p>
+          <textarea id="exit" data-field="exit" placeholder="退出规则……；止损后只有当……时，我才重新评估"></textarea>
+        </div>
+
+        <div class="field">
+          <div class="field-top"><span class="num">↻</span><label for="review">事后复盘</label></div>
+          <p class="hint">交易结束后再填写：我按计划执行了吗？情绪或临时改规则影响了吗？</p>
+          <textarea id="review" data-field="review" placeholder="留空，交易结束后复盘"></textarea>
+        </div>
+        <div class="actions">
+          <button class="primary" id="copy-btn" type="button">复制计划</button>
+          <button class="secondary" id="download-btn" type="button">下载文本</button>
+          <button class="quiet" id="clear-btn" type="button">清空</button>
+        </div>
+        <p class="status" id="save-status" aria-live="polite">内容自动保存在当前浏览器。</p>
+      </section>
+
+      <aside>
+        <section class="mindcheck" aria-labelledby="mindcheck-title">
+          <h2 id="mindcheck-title">心理偏差提醒</h2>
+          <p class="sub">下单前停一下，检查这些念头有没有替代计划。</p>
+          <label class="checkrow"><input type="checkbox" data-field="anchor-check"><span><strong>我被某个价格锚住了吗？</strong>例如成本价、目标价或整数关口。</span></label>
+          <label class="checkrow"><input type="checkbox" data-field="regret-check"><span><strong>我是在追回错过的收益吗？</strong>“本来可以赚到”不是新的进场信号。</span></label>
+          <label class="checkrow"><input type="checkbox" data-field="evidence-check"><span><strong>我也检查了反面证据吗？</strong>写下什么情况会证明我的判断不成立。</span></label>
+          <label class="checkrow"><input type="checkbox" data-field="urge-check"><span><strong>如果现在没有仓位，我还会做这笔吗？</strong>没有交易也是一个选择。</span></label>
+        </section>
+        <section class="panel aside-note">
+          <h3>怎么使用</h3>
+          <p>下单前填写 1–6 项；交易结束后补写复盘。保存只发生在这个浏览器中。</p>
+          <p>这是一份决策记录工具，不会判断市场方向，也不构成投资建议。</p>
+        </section>
+      </aside>
+    </div>
+    <footer>本页数据保存在当前浏览器的本地存储中。清除浏览器数据或换设备后，记录不会自动同步。</footer>
+  </main>
+  <script>
+    (() => {
+      const storageKey = 'investing-psychology-trade-plan-v1';
+      const fields = [...document.querySelectorAll('[data-field]')];
+      const status = document.getElementById('save-status');
+      const dateInput = document.getElementById('trade-date');
+      const today = new Date();
+      const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
+      function readSaved() {
+        try { return JSON.parse(localStorage.getItem(storageKey) || '{}'); }
+        catch { return {}; }
+      }
+      function save() {
+        const values = {};
+        fields.forEach((field) => { values[field.dataset.field] = field.type === 'checkbox' ? field.checked : field.value; });
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(values));
+          status.textContent = '已自动保存到当前浏览器。';
+        } catch {
+          status.textContent = '浏览器未能保存；请使用“下载文本”备份。';
+        }
+      }
+      function planText() {
+        const labels = [
+          ['trade-date', '日期'], ['instrument', '交易标的与方向'], ['reason', '交易理由'],
+          ['entry', '进场条件'], ['invalid', '判断失效与止损'], ['risk', '仓位与最大亏损'],
+          ['exit', '退出与重新评估'], ['review', '事后复盘']
+        ];
+        const values = Object.fromEntries(fields.map((field) => [field.dataset.field, field.type === 'checkbox' ? field.checked : field.value.trim()]));
+        const lines = ['交易前检查表'];
+        labels.forEach(([key, label]) => lines.push(`\n${label}\n${values[key] || '（未填写）'}`));
+        lines.push('\n下单前心理检查');
+        lines.push(`价格锚定：${values['anchor-check'] ? '已检查' : '未勾选'}`);
+        lines.push(`错失收益 / 追单冲动：${values['regret-check'] ? '已检查' : '未勾选'}`);
+        lines.push(`反面证据：${values['evidence-check'] ? '已检查' : '未勾选'}`);
+        lines.push(`无仓位时是否仍会做：${values['urge-check'] ? '已检查' : '未勾选'}`);
+        return lines.join('\n');
+      }
+      const saved = readSaved();
+      fields.forEach((field) => {
+        const key = field.dataset.field;
+        if (Object.prototype.hasOwnProperty.call(saved, key)) {
+          if (field.type === 'checkbox') field.checked = Boolean(saved[key]);
+          else field.value = saved[key];
+        }
+      });
+      if (!dateInput.value) dateInput.value = localDate;
+      fields.forEach((field) => field.addEventListener(field.type === 'checkbox' ? 'change' : 'input', save));
+      document.getElementById('copy-btn').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(planText());
+          status.textContent = '计划已复制，可以粘贴到你的日志里。';
+        } catch {
+          status.textContent = '复制失败；可以使用“下载文本”保存计划。';
+        }
+      });
+      document.getElementById('download-btn').addEventListener('click', () => {
+        const blob = new Blob([planText()], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `交易前检查-${dateInput.value || localDate}.txt`;
+        link.click();
+        URL.revokeObjectURL(url);
+        status.textContent = '文本文件已下载。';
+      });
+      document.getElementById('clear-btn').addEventListener('click', () => {
+        if (!window.confirm('清空本页填写内容？此操作无法撤销。')) return;
+        fields.forEach((field) => { if (field.type === 'checkbox') field.checked = false; else field.value = ''; });
+        dateInput.value = localDate;
+        save();
+        status.textContent = '已清空，并保存了新的空白表单。';
+      });
+    })();
+  </script>
+</body>
+</html>
+
