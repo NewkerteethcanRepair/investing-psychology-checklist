@@ -91,8 +91,7 @@
     </section>
     <footer class="privacy">这是个人记录工具，不会判断市场方向，也不构成投资建议。定期导出 JSON 备份，避免浏览器数据被清理后丢失。</footer>
   </main>
-  <script src="https://static.cloudbase.net/cloudbase-js-sdk/3.0.1/cloudbase.full.js"></script>
-  <script>
+    <script>
   (() => {
     const STORE = 'investing-psychology-journal-v2';
     const LEGACY = 'investing-psychology-trade-plan-v1';
@@ -104,16 +103,71 @@
     let trades = load();
     const localSnapshot = structuredClone(trades);
     let editingId = null;
-    const cloudSdk = typeof cloudbase !== 'undefined' ? cloudbase : window.cloudbase;
-    const cloudApp = cloudSdk?.init({env:'disciplinary-rabbit-d0bm123b1750',region:'ap-shanghai',accessKey:'eyJhbGciOiJSUzI1NiIsImtpZCI6ImY4Y2ZjNDAyLTZiYjgtNDA3ZC1iYWRjLTkyZDRkMTg3NDUyMSJ9.eyJpc3MiOiJodHRwczovL2Rpc2NpcGxpbmFyeS1yYWJiaXQtZDBibTEyM2IxNzUwLmFwLXNoYW5naGFpLnRjYi1hcGkudGVuY2VudGNsb3VkYXBpLmNvbSIsInN1YiI6ImFub24iLCJhdWQiOiJkaXNjaXBsaW5hcnktcmFiYml0LWQwYm0xMjNiMTc1MCIsImV4cCI6NDA5ODIyMjg1MSwiaWF0IjoxNzk0NTM5NjUxLCJub25jZSI6IlNiM3NnUEdTUVZxRDZHUWJaNlNEdWciLCJhdF9oYXNoIjoiU2Izc2dQR1NRVnFENkdRYlo2U0R1ZyIsIm5hbWUiOiJBbm9ueW1vdXMiLCJzY29wZSI6ImFub255bW91cyIsInByb2plY3RfaWQiOiJkaXNjaXBsaW5hcnktcmFiYml0LWQwYm0xMjNiMTc1MCIsIm1ldGEiOnsicGxhdGZvcm0iOiJQdWJsaXNoYWJsZUtleSJ9LCJyb2xlIjoiYW5vbiIsImlzX2Fub255bW91cyI6dHJ1ZSwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiYW5vbnltb3VzIiwicHJvdmlkZXJzIjpbImFub255bW91cyJdfSwidXNlcl9tZXRhZGF0YSI6eyJuYW1lIjoiQW5vbnltb3VzIn0sInVzZXJfdHlwZSI6IiIsImNsaWVudF90eXBlIjoiY2xpZW50X3VzZXIiLCJpc19zeXN0ZW1fYWRtaW4iOmZhbHNlfQ.c75M8ekxTrsv-lAH3Q6jKK5g3gddFbJLpfa3k-x4QuaByKxhgpRArtC16I_I8CSbL5L6YkPHO-n5fW3gTgxdfCiU1brgEnziVXcq9vwIIPcWRrYk47sbX9wVpv5wNaZBrr7vpN21jXHrd3nib0TYZwyiQsLQ9Pi5dhUbFa4Pjb1JlnD9io8NLfkuLfMeWvCE7as_CpWcY8Ks5LH9xna8obP5A5QMXWSlkcBF1609PWimJi_ChvFerEFFPt3sCWGeFpiIGmGcSeuX0aJVCNaGRIJaPHrFUbJbCnStWLoEEbIgAR-ogNzu0ke6b-i2yo7iu9whLqoDA4wtZcacMxxTaw'});
-    const cloudAuth = cloudApp?.auth;
-    const cloudDb = cloudApp?.rdb?.();
-    let cloudUser = null;
-    let pendingVerification = null;
+    const CLOUD_ENV='disciplinary-rabbit-d0bm123b1750';
+    const CLOUD_KEY='eyJhbGciOiJSUzI1NiIsImtpZCI6ImY4Y2ZjNDAyLTZiYjgtNDA3ZC1iYWRjLTkyZDRkMTg3NDUyMSJ9.eyJpc3MiOiJodHRwczovL2Rpc2NpcGxpbmFyeS1yYWJiaXQtZDBibTEyM2IxNzUwLmFwLXNoYW5naGFpLnRjYi1hcGkudGVuY2VudGNsb3VkYXBpLmNvbSIsInN1YiI6ImFub24iLCJhdWQiOiJkaXNjaXBsaW5hcnktcmFiYml0LWQwYm0xMjNiMTc1MCIsImV4cCI6NDA5ODIyMjg1MSwiaWF0IjoxNzk0NTM5NjUxLCJub25jZSI6IlNiM3NnUEdTUVZxRDZHUWJaNlNEdWciLCJhdF9oYXNoIjoiU2Izc2dQR1NRVnFENkdRYlo2U0R1ZyIsIm5hbWUiOiJBbm9ueW1vdXMiLCJzY29wZSI6ImFub255bW91cyIsInByb2plY3RfaWQiOiJkaXNjaXBsaW5hcnktcmFiYml0LWQwYm0xMjNiMTc1MCIsIm1ldGEiOnsicGxhdGZvcm0iOiJQdWJsaXNoYWJsZUtleSJ9LCJyb2xlIjoiYW5vbiIsImlzX2Fub255bW91cyI6dHJ1ZSwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiYW5vbnltb3VzIiwicHJvdmlkZXJzIjpbImFub255bW91cyJdfSwidXNlcl9tZXRhZGF0YSI6eyJuYW1lIjoiQW5vbnltb3VzIn0sInVzZXJfdHlwZSI6IiIsImNsaWVudF90eXBlIjoiY2xpZW50X3VzZXIiLCJpc19zeXN0ZW1fYWRtaW4iOmZhbHNlfQ.c75M8ekxTrsv-lAH3Q6jKK5g3gddFbJLpfa3k-x4QuaByKxhgpRArtC16I_I8CSbL5L6YkPHO-n5fW3gTgxdfCiU1brgEnziVXcq9vwIIPcWRrYk47sbX9wVpv5wNaZBrr7vpN21jXHrd3nib0TYZwyiQsLQ9Pi5dhUbFa4Pjb1JlnD9io8NLfkuLfMeWvCE7as_CpWcY8Ks5LH9xna8obP5A5QMXWSlkcBF1609PWimJi_ChvFerEFFPt3sCWGeFpiIGmGcSeuX0aJVCNaGRIJaPHrFUbJbCnStWLoEEbIgAR-ogNzu0ke6b-i2yo7iu9whLqoDA4wtZcacMxxTaw';
+    const CLOUD_AUTH_API='https://disciplinary-rabbit-d0bm123b1750.ap-shanghai.tcb-api.tencentcloudapi.com';
+    const CLOUD_REST_APIS=['https://disciplinary-rabbit-d0bm123b1750.api.tcloudbasegateway.com','https://disciplinary-rabbit-d0bm123b1750.ap-shanghai.tcb-api.tencentcloudapi.com'];
+    const CLOUD_SESSION_KEY='investing-psychology-cloud-session-v1';
+    let cloudSession=null;
+    try{cloudSession=JSON.parse(localStorage.getItem(CLOUD_SESSION_KEY)||'null');}catch{}
+    let cloudUser=null;
+    let pendingVerification=null;
     function cloudMessage(message){$('#cloud-status').textContent=message;}
-    function cloudReport(error){cloudMessage(`云端同步失败：${error?.message||error}。本机浏览器记录仍保留。`);}
+    function cloudReport(error){cloudMessage('云端同步失败：'+(error?.message||error)+'。本机浏览器记录仍保留。');}
     function requireCloud(result){if(result?.error)throw result.error;return result?.data;}
-    function cloudTradeRow(t){return {id:t.id,trade_date:t.date,asset:t.asset,direction:t.direction||'',timeframe:t.timeframe||'',thesis:t.thesis||'',entry_trigger:t.entry||'',invalidation:t.invalidation||'',position_size:t.size||'',planned_max_loss:t.maxRisk,exit_plan:t.exitPlan||'',status:t.status||'planned',psychology:t.psychology||{},review:t.review||'',updated_at:t.updatedAt||stamp()};}
+    function saveCloudSession(tokens,user){
+      cloudSession={access_token:tokens.access_token,refresh_token:tokens.refresh_token,expires_at:Date.now()+Number(tokens.expires_in||7200)*1000,user};
+      cloudUser=user;localStorage.setItem(CLOUD_SESSION_KEY,JSON.stringify(cloudSession));return cloudSession;
+    }
+    function clearCloudSession(){cloudSession=null;cloudUser=null;localStorage.removeItem(CLOUD_SESSION_KEY);}
+    async function cloudFetch(base,path,{method='GET',body,anonymous=false}={}){
+      const token=anonymous?CLOUD_KEY:((await cloudAccessToken())||CLOUD_KEY);
+      const headers={'Accept':'application/json','apikey':CLOUD_KEY,'Authorization':'Bearer '+token};
+      if(body!==undefined)headers['Content-Type']='application/json';
+      let response;
+      try{response=await fetch(base+path,{method,headers,body:body===undefined?undefined:JSON.stringify(body)});}
+      catch(error){throw new Error('浏览器无法连接 CloudBase 接口：'+(error?.message||'网络请求失败'));}
+      const raw=await response.text();let data=null;
+      if(raw){try{data=JSON.parse(raw);}catch{data=raw;}}
+      if(!response.ok||data?.error){const detail=data?.error_description||data?.message||data?.error||('HTTP '+response.status);throw new Error('HTTP '+response.status+': '+detail);}
+      return data;
+    }
+    async function cloudAccessToken(){
+      if(!cloudSession?.access_token)return null;
+      if(Number(cloudSession.expires_at||0)>Date.now()+60000)return cloudSession.access_token;
+      if(!cloudSession.refresh_token){clearCloudSession();return null;}
+      try{
+        const refreshed=await cloudFetch(CLOUD_AUTH_API,'/auth/v1/token',{method:'POST',body:{grant_type:'refresh_token',refresh_token:cloudSession.refresh_token},anonymous:true});
+        saveCloudSession(refreshed,cloudSession.user);return cloudSession.access_token;
+      }catch(error){clearCloudSession();throw new Error('登录已过期，请重新登录。'+(error?.message||''));}
+    }
+    async function authResult(fn){try{return {data:await fn(),error:null};}catch(error){return {data:null,error};}}
+    function userFromTokens(tokens,login){let sub='';try{sub=JSON.parse(atob(tokens.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).sub||'';}catch{}return {id:tokens.sub||sub,username:login||'',email:String(login||'').includes('@')?login:''};}
+    const cloudAuth={
+      getSession:()=>authResult(async()=>{const token=await cloudAccessToken();return {session:token?{user:cloudSession.user,access_token:token}:null};}),
+      signInWithPassword:credentials=>authResult(async()=>{const login=credentials.username||credentials.email;const tokens=await cloudFetch(CLOUD_AUTH_API,'/auth/v1/signin',{method:'POST',body:{username:login,password:credentials.password},anonymous:true});const user=userFromTokens(tokens,login);const session=saveCloudSession(tokens,user);return {user,session};}),
+      getVerification:({email})=>authResult(()=>cloudFetch(CLOUD_AUTH_API,'/auth/v1/verification',{method:'POST',body:{email,target:'ANY'},anonymous:true})),
+      verify:({verification_id,verification_code})=>authResult(()=>cloudFetch(CLOUD_AUTH_API,'/auth/v1/verification/verify',{method:'POST',body:{verification_id,verification_code},anonymous:true})),
+      signUp:({email,password,verification_token})=>authResult(async()=>{const tokens=await cloudFetch(CLOUD_AUTH_API,'/auth/v1/signup',{method:'POST',body:{email,password,verification_token},anonymous:true});const user=userFromTokens(tokens,email);const session=saveCloudSession(tokens,user);return {user,session};}),
+      signOut:()=>authResult(async()=>{clearCloudSession();return {} ;})
+    };
+    function makeCloudQuery(table){
+      let method='GET',payload,params=new URLSearchParams(),executed=null;
+      const query={
+        select(columns='*'){method='GET';params.set('select',columns);return this;},
+        order(column,{ascending=true}={}){params.set('order',column+'.'+(ascending?'asc':'desc'));return this;},
+        insert(value){method='POST';payload=value;return this.execute();},
+        update(value){method='PATCH';payload=value;return this;},
+        delete(){method='DELETE';return this;},
+        eq(column,value){params.set(column,'eq.'+String(value));return this.execute();},
+        execute(){if(executed)return executed;executed=(async()=>{const suffix=params.toString();const path='/v1/rdb/rest/'+encodeURIComponent(table)+(suffix?'?'+suffix:'');const options={method,body:payload};let lastError;
+          for(const base of CLOUD_REST_APIS){try{return {data:await cloudFetch(base,path,options),error:null};}catch(error){lastError=error;if(!/Failed to fetch|NetworkError|HTTP (404|502|503)/.test(String(error?.message||'')))throw error;}}
+          throw lastError||new Error('无法连接 CloudBase PostgreSQL 接口');
+        })();return executed;},
+        then(resolve,reject){return this.execute().then(resolve,reject);}
+      };return query;
+    }
+    const cloudDb={from:makeCloudQuery};    function cloudTradeRow(t){return {id:t.id,trade_date:t.date,asset:t.asset,direction:t.direction||'',timeframe:t.timeframe||'',thesis:t.thesis||'',entry_trigger:t.entry||'',invalidation:t.invalidation||'',position_size:t.size||'',planned_max_loss:t.maxRisk,exit_plan:t.exitPlan||'',status:t.status||'planned',psychology:t.psychology||{},review:t.review||'',updated_at:t.updatedAt||stamp()};}
     function fromCloudTrade(r,actions){return {id:r.id,date:r.trade_date,asset:r.asset,direction:r.direction||'',timeframe:r.timeframe||'',thesis:r.thesis||'',entry:r.entry_trigger||'',invalidation:r.invalidation||'',size:r.position_size||'',maxRisk:r.planned_max_loss==null?null:Number(r.planned_max_loss),exitPlan:r.exit_plan||'',status:r.status||'planned',psychology:r.psychology||{},review:r.review||'',createdAt:r.created_at||stamp(),updatedAt:r.updated_at||r.created_at||stamp(),actions:actions.filter(a=>a.trade_id===r.id).map(a=>({id:a.id,at:a.occurred_at,type:a.action_type,note:a.note||'',pnl:a.realized_pnl==null?null:Number(a.realized_pnl)}))};}
     async function cloudLoad(){
       const [tr,ar]=await Promise.all([cloudDb.from('trade_records').select('*').order('created_at',{ascending:false}),cloudDb.from('trade_actions').select('*').order('occurred_at',{ascending:false})]);
@@ -125,7 +179,7 @@
     async function cloudWriteAction(t,a){if(!cloudUser)return;requireCloud(await cloudDb.from('trade_actions').insert({id:a.id,trade_id:t.id,action_type:a.type,note:a.note||'',realized_pnl:a.pnl,occurred_at:a.at}));requireCloud(await cloudDb.from('trade_records').update({status:t.status,updated_at:t.updatedAt}).eq('id',t.id));}
     async function cloudStart(user){cloudUser=user;await cloudLoad();}
     async function cloudLogin(){
-      if(!cloudAuth||!cloudDb){cloudMessage('CloudBase SDK 加载失败，请检查网络后刷新页面。');return;}
+      
       const login=$('#cloud-user').value.trim(),password=$('#cloud-password').value;
       if(!login||!password){cloudMessage('请输入用户名或邮箱，以及密码。');return;}
       $('#cloud-login').disabled=true;cloudMessage('正在登录并读取云端记录…');
@@ -134,7 +188,7 @@
       finally{$('#cloud-login').disabled=false;}
     }
     async function cloudRegister(){
-      if(!cloudAuth){cloudMessage('CloudBase SDK 加载失败，请检查网络后刷新页面。');return;}
+      
       const email=$('#cloud-user').value.trim(),password=$('#cloud-password').value;
       if(!email.includes('@')){cloudMessage('注册时请在“用户名或邮箱”中填写邮箱地址。');return;}
       if(!password){cloudMessage('请先设置登录密码。');return;}
@@ -161,7 +215,7 @@
       finally{button.disabled=false;}
     }
     async function cloudInit(){
-      if(!cloudAuth||!cloudDb){cloudMessage('CloudBase SDK 加载失败；本机记录仍可使用。');return;}
+      if(!CLOUD_AUTH_API||!CLOUD_REST_APIS.length){cloudMessage('CloudBase 环境配置缺失。');return;}
       try{const result=await cloudAuth.getSession();if(result?.error)throw result.error;if(result?.data?.session?.user)await cloudStart(result.data.session.user);}
       catch(error){cloudReport(error);}
     }
@@ -268,6 +322,8 @@
   </script>
 </body>
 </html>
+
+
 
 
 
