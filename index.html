@@ -232,8 +232,7 @@
       }).join('');
     }
     function detail(label,value){return `<div class="detail-cell"><strong>${label}</strong><div>${value?esc(value):'<span style="color:#9aa39d">未填写</span>'}</div></div>`;}
-    function psychText(p={}) { const names={anchor:'价格锚定',regret:'错失收益 / 追单冲动',evidence:'反面证据',flatCheck:'空仓检验'}; return Object.keys(names).map(k=>`${names[k]}：${p[k]?'已检查':'未勾选'}`).join('
-'); }
+    function psychText(p={}) { const names={anchor:'价格锚定',regret:'错失收益 / 追单冲动',evidence:'反面证据',flatCheck:'空仓检验'}; return Object.keys(names).map(k=>`${names[k]}：${p[k]?'已检查':'未勾选'}`).join('\n'); }
     function formatTime(s){try{return new Intl.DateTimeFormat('zh-CN',{dateStyle:'medium',timeStyle:'short'}).format(new Date(s));}catch{return s||'';}}
     function setTab(id){$$('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));$$('.view').forEach(v=>v.classList.toggle('active',v.id===id));}
     function resetForm(){editingId=null;$('#trade-form').reset();$('#trade-date').value=today();$('#form-title').textContent='新建一笔交易';$('#save-trade').textContent='保存交易计划';$('#cancel-edit').classList.add('hidden');}
@@ -268,6 +267,7 @@
   </script>
 </body>
 </html>
+
 
 
 
