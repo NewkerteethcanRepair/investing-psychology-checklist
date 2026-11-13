@@ -4,246 +4,191 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f5f4ef">
-  <title>交易前检查｜投资心理学</title>
+  <title>交易日志｜投资心理学</title>
   <style>
-    :root {
-      color-scheme: light;
-      --ink: #18231f;
-      --muted: #67736d;
-      --paper: #f5f4ef;
-      --card: #fffefa;
-      --line: #e5e6dd;
-      --green: #216b50;
-      --green-dark: #174c3a;
-      --mint: #e9f3ec;
-      --amber: #fff5df;
-      --amber-line: #f0dfb6;
-      --shadow: 0 16px 42px rgba(31, 48, 40, .07);
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--paper);
-      color: var(--ink);
-      font: 15px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
-    }
-    button, input, textarea { font: inherit; }
-    .shell { width: min(1020px, calc(100% - 36px)); margin: 0 auto; padding: 36px 0 64px; }
-    .topline { display: flex; align-items: center; gap: 9px; color: var(--green); font-size: 12px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
-    .topline::before { content: ""; width: 23px; height: 2px; background: var(--green); }
-    header { max-width: 730px; margin: 20px 0 28px; }
-    h1 { margin: 0; font-size: clamp(32px, 5vw, 50px); line-height: 1.08; letter-spacing: -.045em; font-weight: 730; }
-    .intro { margin: 15px 0 0; color: var(--muted); font-size: 16px; max-width: 670px; }
-    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 22px; align-items: start; }
-    .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
-    .form-panel { padding: 24px; }
-    .form-head { display: flex; justify-content: space-between; align-items: start; gap: 16px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
-    .form-head h2 { margin: 0; font-size: 18px; letter-spacing: -.02em; }
-    .form-head p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
-    .date-wrap { flex: 0 0 155px; }
-    .field { margin-top: 22px; }
-    .field-top { display: flex; align-items: baseline; gap: 9px; margin-bottom: 8px; }
-    .num { display: grid; place-items: center; flex: 0 0 23px; height: 23px; border-radius: 50%; background: var(--mint); color: var(--green-dark); font-size: 12px; font-weight: 750; }
-    label, .label { font-weight: 680; font-size: 14px; }
-    .hint { margin: 0 0 9px 32px; color: var(--muted); font-size: 12px; }
-    input, textarea { display: block; width: 100%; border: 1px solid #dfe2d9; border-radius: 9px; padding: 11px 12px; background: #fff; color: var(--ink); outline: none; transition: border-color .15s, box-shadow .15s; }
-    input:focus, textarea:focus { border-color: #7aaa92; box-shadow: 0 0 0 3px rgba(33,107,80,.1); }
-    input::placeholder, textarea::placeholder { color: #9aa39d; }
-    textarea { min-height: 76px; resize: vertical; }
-    .date-wrap input { padding: 8px 10px; font-size: 13px; }
-    .mindcheck { padding: 20px; background: var(--amber); border: 1px solid var(--amber-line); border-radius: 14px; }
-    .mindcheck h2 { margin: 0; font-size: 16px; }
-    .mindcheck .sub { margin: 4px 0 13px; color: #796a4b; font-size: 12px; }
-    .checkrow { display: flex; gap: 10px; align-items: start; padding: 11px 0; border-top: 1px solid rgba(121,106,75,.16); font-size: 13px; }
-    .checkrow input { flex: 0 0 16px; width: 16px; height: 16px; margin: 3px 0 0; accent-color: var(--green); }
-    .checkrow strong { display: block; font-size: 13px; }
-    .checkrow span { color: #70654f; }
-    .aside-note { margin-top: 16px; padding: 17px 18px; }
-    .aside-note h3 { margin: 0 0 7px; font-size: 14px; }
-    .aside-note p { margin: 0; color: var(--muted); font-size: 12px; }
-    .aside-note p + p { margin-top: 9px; }
-    .status { min-height: 19px; margin: 13px 0 0; color: var(--muted); font-size: 12px; }
-    .actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 13px; }
-    button { border: 0; border-radius: 9px; padding: 10px 14px; cursor: pointer; font-weight: 650; transition: transform .12s, background .12s; }
-    button:hover { transform: translateY(-1px); }
-    .primary { background: var(--green); color: white; }
-    .primary:hover { background: var(--green-dark); }
-    .secondary { background: #edf0ea; color: var(--ink); }
-    .secondary:hover { background: #e2e7df; }
-    .quiet { background: transparent; color: var(--muted); padding-inline: 10px; }
-    .quiet:hover { background: #f1f1eb; }
-    footer { margin-top: 23px; color: #7c857f; font-size: 11px; }
-    @media (max-width: 760px) {
-      .shell { width: min(100% - 24px, 600px); padding-top: 25px; }
-      .layout { grid-template-columns: 1fr; }
-      .form-panel { padding: 18px; }
-      .date-wrap { flex-basis: 135px; }
-    }
-    @media (max-width: 430px) {
-      .form-head { flex-direction: column; }
-      .date-wrap { flex-basis: auto; width: 100%; }
-      .actions button { flex: 1; }
-    }
+    :root{color-scheme:light;--ink:#18231f;--muted:#68736d;--paper:#f5f4ef;--card:#fffefa;--line:#e3e5dc;--green:#216b50;--green-dark:#174c3a;--mint:#e9f3ec;--amber:#fff5df;--red:#a6443d;--shadow:0 14px 40px rgba(31,48,40,.065)}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif}button,input,textarea,select{font:inherit}button{cursor:pointer;border:0;border-radius:9px;padding:10px 14px;font-weight:680;transition:background .15s,transform .15s}button:hover{transform:translateY(-1px)}button:disabled{opacity:.5;cursor:not-allowed;transform:none}.primary{background:var(--green);color:white}.primary:hover{background:var(--green-dark)}.secondary{background:#edf0ea;color:var(--ink)}.secondary:hover{background:#e2e7df}.danger{background:#f8e9e7;color:#873933}.danger:hover{background:#f1d9d6}.quiet{background:transparent;color:var(--muted)}.quiet:hover{background:#eff0e9}
+    .shell{width:min(1120px,calc(100% - 32px));margin:auto;padding:34px 0 60px}.eyebrow{display:flex;align-items:center;gap:9px;color:var(--green);font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.eyebrow:before{content:"";width:22px;height:2px;background:var(--green)}header{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin:16px 0 25px}.hero h1{font-size:clamp(32px,5vw,48px);line-height:1.05;letter-spacing:-.045em;margin:0;font-weight:740}.hero p{max-width:700px;margin:12px 0 0;color:var(--muted);font-size:15px}.top-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}.metric{padding:17px 18px;background:var(--card);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow)}.metric-label{color:var(--muted);font-size:12px}.metric-value{font-size:25px;font-weight:740;letter-spacing:-.035em;margin-top:3px;font-variant-numeric:tabular-nums}.metric-sub{font-size:11px;color:var(--muted);margin-top:2px}.positive{color:var(--green)}.negative{color:var(--red)}
+    .tabs{display:flex;gap:7px;border-bottom:1px solid var(--line);margin:0 0 18px}.tab{background:transparent;color:var(--muted);border-radius:8px 8px 0 0;padding:10px 15px;border-bottom:2px solid transparent}.tab.active{color:var(--green-dark);border-color:var(--green);background:rgba(255,255,255,.45)}.view{display:none}.view.active{display:block}.panel{background:var(--card);border:1px solid var(--line);border-radius:15px;box-shadow:var(--shadow)}.form-panel{padding:23px}.section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding-bottom:17px;border-bottom:1px solid var(--line)}.section-head h2{margin:0;font-size:18px;letter-spacing:-.02em}.section-head p{margin:4px 0 0;color:var(--muted);font-size:12px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px 15px}.field{min-width:0}.field.full{grid-column:1/-1}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}.field small{display:block;color:var(--muted);font-size:11px;margin-top:5px}.field input,.field textarea,.field select,.search{width:100%;border:1px solid #dfe2d9;border-radius:9px;padding:10px 11px;background:#fff;color:var(--ink);outline:none}.field textarea{min-height:77px;resize:vertical}.field input:focus,.field textarea:focus,.field select:focus,.search:focus{border-color:#7aaa92;box-shadow:0 0 0 3px rgba(33,107,80,.1)}.field input::placeholder,.field textarea::placeholder{color:#9aa39d}.form-section{margin-top:20px}.form-section h3{margin:0 0 12px;font-size:14px}.psychology{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.check{display:flex;gap:9px;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:12px;align-items:flex-start;background:#fff}.check input{accent-color:var(--green);margin:3px 0 0}.check strong{display:block;font-size:12px}.check span{color:var(--muted)}.form-actions{display:flex;gap:9px;align-items:center;margin-top:19px;flex-wrap:wrap}.status{font-size:12px;color:var(--muted);min-height:18px;margin:10px 0 0}.notice{margin-top:16px;padding:12px 14px;background:var(--amber);border:1px solid #f0dfb6;border-radius:10px;color:#715e3e;font-size:12px}
+    .history-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 13px}.history-head h2{margin:0;font-size:19px}.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.search{width:min(240px,50vw)}.filters select{border:1px solid var(--line);background:white;border-radius:9px;padding:9px;color:var(--ink)}.trade-list{display:grid;gap:12px}.empty{padding:46px 20px;text-align:center;color:var(--muted);border:1px dashed #cdd3ca;border-radius:14px;background:rgba(255,255,255,.4)}.empty strong{display:block;color:var(--ink);font-size:16px;margin-bottom:5px}.trade-card{padding:17px 18px}.trade-top{display:flex;justify-content:space-between;gap:15px;align-items:flex-start}.trade-name{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.trade-name h3{font-size:17px;margin:0}.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:var(--mint);color:var(--green-dark);font-size:11px;font-weight:700}.badge.open{background:#e8f1fb;color:#315e8a}.badge.closed{background:#edf0ea;color:#526058}.badge.cancelled{background:#f2e9e7;color:#805650}.badge.planned{background:#fff4df;color:#795c26}.trade-date{color:var(--muted);font-size:12px;margin-top:4px}.trade-stats{display:flex;gap:18px;align-items:center;flex-wrap:wrap;text-align:right}.pnl{font-weight:730;font-variant-numeric:tabular-nums}.trade-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.tag{padding:4px 8px;background:#f1f2ec;border-radius:7px;font-size:11px;color:#56645c}.trade-controls{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px}.trade-controls button{font-size:12px;padding:8px 10px}.trade-details{border-top:1px solid var(--line);margin-top:14px;padding-top:13px}.trade-details summary{cursor:pointer;color:var(--green-dark);font-weight:700;font-size:12px}.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin:13px 0}.detail-cell{padding:10px;background:#f7f7f2;border-radius:9px;min-width:0}.detail-cell strong{display:block;font-size:11px;color:var(--muted);margin-bottom:3px}.detail-cell div{white-space:pre-wrap;overflow-wrap:anywhere}.action-title{font-size:13px;margin:18px 0 10px}.action-form{display:grid;grid-template-columns:1fr 1fr 120px auto;gap:8px;align-items:end;padding:12px;background:#f7f7f2;border-radius:11px}.action-form label{display:block;font-size:10px;font-weight:700;margin-bottom:4px}.action-form select,.action-form input,.action-form textarea{width:100%;border:1px solid #dfe2d9;border-radius:8px;padding:8px;background:white;color:var(--ink)}.action-form textarea{min-height:38px;resize:vertical}.action-form button{padding:9px 11px;font-size:11px}.timeline{display:grid;gap:0;margin-top:11px}.event{position:relative;display:grid;grid-template-columns:145px 1fr auto;gap:11px;padding:10px 0;border-top:1px solid var(--line);font-size:12px}.event-time{color:var(--muted);font-size:11px}.event-note{white-space:pre-wrap;overflow-wrap:anywhere}.event-pnl{font-weight:700;white-space:nowrap}.event-remove{background:transparent;padding:2px 5px;color:#8c7772;font-size:11px}.backup-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.privacy{font-size:11px;color:var(--muted);margin-top:20px}.hidden{display:none!important}.file-input{display:none}
+    @media(max-width:800px){header{display:block}.top-actions{justify-content:flex-start;margin-top:16px}.summary{grid-template-columns:repeat(2,1fr)}.action-form{grid-template-columns:1fr 1fr}.action-form .wide{grid-column:1/-1}.trade-top{display:block}.trade-stats{text-align:left;margin-top:9px}.event{grid-template-columns:115px 1fr auto}}
+    @media(max-width:520px){.shell{width:calc(100% - 22px);padding-top:24px}.summary{gap:8px}.metric{padding:13px}.metric-value{font-size:21px}.form-panel{padding:16px}.form-grid,.psychology,.detail-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.history-head{display:block}.filters{margin-top:11px}.search{width:100%;flex:1}.filters select{flex:0 0 120px}.action-form{grid-template-columns:1fr}.action-form .wide{grid-column:auto}.event{grid-template-columns:1fr auto;gap:3px}.event-time{grid-column:1/-1}.tabs{overflow:auto}.tab{white-space:nowrap}}
   </style>
 </head>
 <body>
   <main class="shell">
-    <div class="topline">投资心理学 · 交易日志</div>
+    <div class="eyebrow">投资心理学 · 个人交易日志</div>
     <header>
-      <h1>先写计划，<br>再做决定。</h1>
-      <p class="intro">用几分钟把交易理由、触发条件和风险边界写下来。盘中情绪变化时，回到自己事前定下的规则。</p>
+      <div class="hero">
+        <h1>记录每次决定，<br>看见长期模式。</h1>
+        <p>每笔交易单独建档，后续进场、减仓、调整止损、退出和复盘都追加到同一条记录。汇总只依据你录入的已实现盈亏。</p>
+      </div>
+      <div class="top-actions backup-row">
+        <button class="secondary" id="export-btn" type="button">导出备份</button>
+        <button class="secondary" id="import-btn" type="button">导入备份</button>
+        <input class="file-input" id="import-file" type="file" accept="application/json,.json">
+      </div>
     </header>
 
-    <div class="layout">
-      <section class="panel form-panel" aria-labelledby="plan-title">
-        <div class="form-head">
-          <div>
-            <h2 id="plan-title">交易前检查表</h2>
-            <p>写清楚就够了，不需要写成长篇分析。</p>
+    <section class="summary" aria-label="交易汇总">
+      <div class="metric"><div class="metric-label">计划 / 持仓</div><div class="metric-value" id="active-count">0</div><div class="metric-sub">未结束记录</div></div>
+      <div class="metric"><div class="metric-label">已实现净盈亏</div><div class="metric-value" id="net-pnl">$0.00</div><div class="metric-sub">按操作流水累计</div></div>
+      <div class="metric"><div class="metric-label">累计亏损</div><div class="metric-value negative" id="loss-total">$0.00</div><div class="metric-sub">亏损操作的绝对值合计</div></div>
+      <div class="metric"><div class="metric-label">持仓计划风险</div><div class="metric-value" id="open-risk">$0.00</div><div class="metric-sub">持仓中记录填写的最大风险合计</div></div>
+    </section>
+
+    <nav class="tabs" aria-label="交易日志导航">
+      <button class="tab active" data-tab="new-view" type="button">新建交易计划</button>
+      <button class="tab" data-tab="history-view" type="button">历史与操作流水 <span id="history-count">0</span></button>
+    </nav>
+
+    <section class="view active" id="new-view">
+      <form class="panel form-panel" id="trade-form">
+        <div class="section-head">
+          <div><h2 id="form-title">新建一笔交易</h2><p>保存后会成为独立记录；后续更新追加在它下面，不会覆盖旧记录。</p></div>
+          <button class="quiet hidden" type="button" id="cancel-edit">取消编辑</button>
+        </div>
+        <div class="form-section">
+          <div class="form-grid">
+            <div class="field"><label for="trade-date">计划日期</label><input id="trade-date" name="date" type="date" required></div>
+            <div class="field"><label for="asset">标的 / 代码</label><input id="asset" name="asset" placeholder="例如 BTC、XAG、SNDK" required></div>
+            <div class="field"><label for="direction">方向</label><select id="direction" name="direction"><option value="">选择方向</option><option>做多</option><option>做空</option><option>观察 / 未决定</option></select></div>
+            <div class="field"><label for="timeframe">观察周期</label><input id="timeframe" name="timeframe" placeholder="例如 1h 入场，日线假设"></div>
+            <div class="field full"><label for="thesis">交易理由 / 假设</label><textarea id="thesis" name="thesis" placeholder="为什么考虑这笔？参考位是什么依据？什么证据会推翻判断？"></textarea></div>
+            <div class="field"><label for="entry">进场触发</label><textarea id="entry" name="entry" placeholder="写可观察的条件，避免只写‘现在方便’"></textarea></div>
+            <div class="field"><label for="invalidation">判断失效与止损</label><textarea id="invalidation" name="invalidation" placeholder="空仓时不进场条件 / 持仓后的止损条件，请分别说明"></textarea></div>
+            <div class="field"><label for="size">计划仓位 / 名义金额</label><input id="size" name="size" inputmode="decimal" placeholder="例如 1400 USD；注明是金额、数量还是账户比例"></div>
+            <div class="field"><label for="max-risk">计划最大亏损（USD）</label><input id="max-risk" name="maxRisk" type="number" min="0" step="0.01" placeholder="例如 80"></div>
+            <div class="field full"><label for="exit-plan">退出与重新评估</label><textarea id="exit-plan" name="exitPlan" placeholder="退出规则、持仓时间边界、止损后什么条件下再评估"></textarea></div>
           </div>
-          <div class="date-wrap">
-            <label for="trade-date">记录日期</label>
-            <input id="trade-date" data-field="trade-date" type="date">
+        </div>
+        <div class="form-section">
+          <h3>下单前心理检查</h3>
+          <div class="psychology">
+            <label class="check"><input name="anchor" type="checkbox"><span><strong>价格锚定</strong>我是否把成本价、目标价或技术位当成必然有效？</span></label>
+            <label class="check"><input name="regret" type="checkbox"><span><strong>错失收益 / 追单冲动</strong>我是否因为之前没买而急着追？</span></label>
+            <label class="check"><input name="evidence" type="checkbox"><span><strong>反面证据</strong>我是否写了什么情况会推翻判断？</span></label>
+            <label class="check"><input name="flatCheck" type="checkbox"><span><strong>空仓检验</strong>如果现在没有仓位，我仍会做这笔吗？</span></label>
           </div>
         </div>
+        <div class="form-actions"><button class="primary" type="submit" id="save-trade">保存交易计划</button><button class="secondary" type="reset">清空表单</button></div>
+        <p class="status" id="form-status" aria-live="polite"></p>
+      </form>
+      <div class="notice">本版本把记录保存在当前浏览器中，并支持备份导入 / 导出；换浏览器或设备不会自动同步。页面代码公开，但你的交易记录不会上传到 GitHub。</div>
+    </section>
 
-        <div class="field">
-          <div class="field-top"><span class="num">1</span><label for="instrument">交易什么、做多还是做空？</label></div>
-          <p class="hint">写标的 / 代码、方向，以及计划交易的周期。</p>
-          <textarea id="instrument" data-field="instrument" placeholder="例如：QQQ，做多，按日线计划"></textarea>
-        </div>
-        <div class="field">
-          <div class="field-top"><span class="num">2</span><label for="reason">为什么考虑这笔交易？</label></div>
-          <p class="hint">写下主要依据，以及什么证据会推翻你的判断。</p>
-          <textarea id="reason" data-field="reason" placeholder="我的交易假设是……主要依据是……"></textarea>
-        </div>
-        <div class="field">
-          <div class="field-top"><span class="num">3</span><label for="entry">什么条件触发进场？</label></div>
-          <p class="hint">尽量写成可观察的条件，而不是“感觉差不多”。</p>
-          <textarea id="entry" data-field="entry" placeholder="当……发生 / 收盘确认……时，我才考虑进场"></textarea>
-        </div>
-        <div class="field">
-          <div class="field-top"><span class="num">4</span><label for="invalid">什么情况说明判断失效，在哪里止损？</label></div>
-          <p class="hint">写明确的价格或规则，并说明它对应哪条交易假设。</p>
-          <textarea id="invalid" data-field="invalid" placeholder="如果……，说明判断失效；止损规则是……"></textarea>
-        </div>
-        <div class="field">
-          <div class="field-top"><span class="num">5</span><label for="risk">仓位多大，最多亏多少？</label></div>
-          <p class="hint">写金额或账户比例；杠杆产品也要按止损距离核算风险。</p>
-          <textarea id="risk" data-field="risk" placeholder="计划仓位……；触发止损时，预计最多亏损……"></textarea>
-        </div>
-        <div class="field">
-          <div class="field-top"><span class="num">6</span><label for="exit">进场后怎么退出？止损后何时重新评估？</label></div>
-          <p class="hint">写止盈、移动止损或持仓期限等规则，以及重新评估的条件。</p>
-          <textarea id="exit" data-field="exit" placeholder="退出规则……；止损后只有当……时，我才重新评估"></textarea>
-        </div>
-
-        <div class="field">
-          <div class="field-top"><span class="num">↻</span><label for="review">事后复盘</label></div>
-          <p class="hint">交易结束后再填写：我按计划执行了吗？情绪或临时改规则影响了吗？</p>
-          <textarea id="review" data-field="review" placeholder="留空，交易结束后复盘"></textarea>
-        </div>
-        <div class="actions">
-          <button class="primary" id="copy-btn" type="button">复制计划</button>
-          <button class="secondary" id="download-btn" type="button">下载文本</button>
-          <button class="quiet" id="clear-btn" type="button">清空</button>
-        </div>
-        <p class="status" id="save-status" aria-live="polite">内容自动保存在当前浏览器。</p>
-      </section>
-
-      <aside>
-        <section class="mindcheck" aria-labelledby="mindcheck-title">
-          <h2 id="mindcheck-title">心理偏差提醒</h2>
-          <p class="sub">下单前停一下，检查这些念头有没有替代计划。</p>
-          <label class="checkrow"><input type="checkbox" data-field="anchor-check"><span><strong>我被某个价格锚住了吗？</strong>例如成本价、目标价或整数关口。</span></label>
-          <label class="checkrow"><input type="checkbox" data-field="regret-check"><span><strong>我是在追回错过的收益吗？</strong>“本来可以赚到”不是新的进场信号。</span></label>
-          <label class="checkrow"><input type="checkbox" data-field="evidence-check"><span><strong>我也检查了反面证据吗？</strong>写下什么情况会证明我的判断不成立。</span></label>
-          <label class="checkrow"><input type="checkbox" data-field="urge-check"><span><strong>如果现在没有仓位，我还会做这笔吗？</strong>没有交易也是一个选择。</span></label>
-        </section>
-        <section class="panel aside-note">
-          <h3>怎么使用</h3>
-          <p>下单前填写 1–6 项；交易结束后补写复盘。保存只发生在这个浏览器中。</p>
-          <p>这是一份决策记录工具，不会判断市场方向，也不构成投资建议。</p>
-        </section>
-      </aside>
-    </div>
-    <footer>本页数据保存在当前浏览器的本地存储中。清除浏览器数据或换设备后，记录不会自动同步。</footer>
+    <section class="view" id="history-view">
+      <div class="history-head"><h2>历史记录</h2><div class="filters"><input class="search" id="search" placeholder="搜索标的或内容"><select id="status-filter"><option value="all">全部状态</option><option value="planned">计划中</option><option value="open">持仓中</option><option value="closed">已结束</option><option value="cancelled">已取消</option></select><select id="sort-filter"><option value="newest">最新优先</option><option value="oldest">最早优先</option></select></div></div>
+      <div class="trade-list" id="trade-list"></div>
+      <p class="privacy">累计亏损 = 你在操作流水中录入的负数盈亏绝对值之和。已实现净盈亏 = 所有操作流水中录入的盈亏合计。数值不会自动从券商同步。</p>
+    </section>
+    <footer class="privacy">这是个人记录工具，不会判断市场方向，也不构成投资建议。定期导出 JSON 备份，避免浏览器数据被清理后丢失。</footer>
   </main>
   <script>
-    (() => {
-      const storageKey = 'investing-psychology-trade-plan-v1';
-      const fields = [...document.querySelectorAll('[data-field]')];
-      const status = document.getElementById('save-status');
-      const dateInput = document.getElementById('trade-date');
-      const today = new Date();
-      const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  (() => {
+    const STORE = 'investing-psychology-journal-v2';
+    const LEGACY = 'investing-psychology-trade-plan-v1';
+    const $ = (s, root=document) => root.querySelector(s);
+    const $$ = (s, root=document) => [...root.querySelectorAll(s)];
+    const today = () => { const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); };
+    const id = () => (globalThis.crypto?.randomUUID?.() || `trade-${Date.now()}-${Math.random().toString(36).slice(2,9)}`);
+    const stamp = () => new Date().toISOString();
+    let trades = load();
+    let editingId = null;
 
-      function readSaved() {
-        try { return JSON.parse(localStorage.getItem(storageKey) || '{}'); }
-        catch { return {}; }
-      }
-      function save() {
-        const values = {};
-        fields.forEach((field) => { values[field.dataset.field] = field.type === 'checkbox' ? field.checked : field.value; });
-        try {
-          localStorage.setItem(storageKey, JSON.stringify(values));
-          status.textContent = '已自动保存到当前浏览器。';
-        } catch {
-          status.textContent = '浏览器未能保存；请使用“下载文本”备份。';
+    function load() {
+      try {
+        const current = JSON.parse(localStorage.getItem(STORE) || 'null');
+        if (Array.isArray(current)) return current;
+        const old = JSON.parse(localStorage.getItem(LEGACY) || 'null');
+        if (old && Object.values(old).some(v => v !== '' && v !== false && v != null)) {
+          const migrated = [{
+            id:id(), createdAt:stamp(), date:old['trade-date'] || today(), asset:old.instrument || '待补标的', direction:'', timeframe:'',
+            thesis:old.reason || '', entry:old.entry || '', invalidation:old.invalid || '', size:'', maxRisk:null, exitPlan:old.exit || '', status:'planned',
+            psychology:{anchor:!!old['anchor-check'],regret:!!old['regret-check'],evidence:!!old['evidence-check'],flatCheck:!!old['urge-check']}, actions:[], review:old.review || '',
+            migrationNote:'从旧版单条表单迁移；请核对并补充仓位、最大风险与方向。'
+          }];
+          localStorage.setItem(STORE, JSON.stringify(migrated));
+          return migrated;
         }
-      }
-      function planText() {
-        const labels = [
-          ['trade-date', '日期'], ['instrument', '交易标的与方向'], ['reason', '交易理由'],
-          ['entry', '进场条件'], ['invalid', '判断失效与止损'], ['risk', '仓位与最大亏损'],
-          ['exit', '退出与重新评估'], ['review', '事后复盘']
-        ];
-        const values = Object.fromEntries(fields.map((field) => [field.dataset.field, field.type === 'checkbox' ? field.checked : field.value.trim()]));
-        const lines = ['交易前检查表'];
-        labels.forEach(([key, label]) => lines.push(`\n${label}\n${values[key] || '（未填写）'}`));
-        lines.push('\n下单前心理检查');
-        lines.push(`价格锚定：${values['anchor-check'] ? '已检查' : '未勾选'}`);
-        lines.push(`错失收益 / 追单冲动：${values['regret-check'] ? '已检查' : '未勾选'}`);
-        lines.push(`反面证据：${values['evidence-check'] ? '已检查' : '未勾选'}`);
-        lines.push(`无仓位时是否仍会做：${values['urge-check'] ? '已检查' : '未勾选'}`);
-        return lines.join('\n');
-      }
-      const saved = readSaved();
-      fields.forEach((field) => {
-        const key = field.dataset.field;
-        if (Object.prototype.hasOwnProperty.call(saved, key)) {
-          if (field.type === 'checkbox') field.checked = Boolean(saved[key]);
-          else field.value = saved[key];
-        }
-      });
-      if (!dateInput.value) dateInput.value = localDate;
-      fields.forEach((field) => field.addEventListener(field.type === 'checkbox' ? 'change' : 'input', save));
-      document.getElementById('copy-btn').addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(planText());
-          status.textContent = '计划已复制，可以粘贴到你的日志里。';
-        } catch {
-          status.textContent = '复制失败；可以使用“下载文本”保存计划。';
-        }
-      });
-      document.getElementById('download-btn').addEventListener('click', () => {
-        const blob = new Blob([planText()], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `交易前检查-${dateInput.value || localDate}.txt`;
-        link.click();
-        URL.revokeObjectURL(url);
-        status.textContent = '文本文件已下载。';
-      });
-      document.getElementById('clear-btn').addEventListener('click', () => {
-        if (!window.confirm('清空本页填写内容？此操作无法撤销。')) return;
-        fields.forEach((field) => { if (field.type === 'checkbox') field.checked = false; else field.value = ''; });
-        dateInput.value = localDate;
-        save();
-        status.textContent = '已清空，并保存了新的空白表单。';
-      });
-    })();
+      } catch {}
+      return [];
+    }
+    function persist() {
+      try { localStorage.setItem(STORE, JSON.stringify(trades)); return true; }
+      catch { alert('浏览器存储失败。请导出备份后清理空间，或使用其他浏览器。'); return false; }
+    }
+    function esc(value='') { return String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function money(n) { return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(n)||0); }
+    function pnlOf(t) { return (t.actions||[]).reduce((s,a)=>s+(Number.isFinite(Number(a.pnl))?Number(a.pnl):0),0); }
+    function statusLabel(s) { return ({planned:'计划中',open:'持仓中',closed:'已结束',cancelled:'已取消'})[s] || '计划中'; }
+    function actionLabel(a) { return ({entry:'执行进场',add:'加仓',reduce:'减仓',stop:'调整止损',take:'部分止盈',exit:'完全退出',stopped:'止损退出',reassess:'重新评估',cancel:'取消计划',note:'备注'})[a] || a; }
+    function renderSummary() {
+      const active = trades.filter(t=>t.status==='planned'||t.status==='open').length;
+      const net=trades.reduce((s,t)=>s+pnlOf(t),0);
+      const losses=trades.reduce((s,t)=>s+(t.actions||[]).reduce((a,e)=>a+Math.max(0,-(Number(e.pnl)||0)),0),0);
+      const risk=trades.filter(t=>t.status==='open').reduce((s,t)=>s+(Number(t.maxRisk)||0),0);
+      $('#active-count').textContent=active;
+      const netEl=$('#net-pnl'); netEl.textContent=money(net); netEl.className=`metric-value ${net>0?'positive':net<0?'negative':''}`;
+      $('#loss-total').textContent=money(losses); $('#open-risk').textContent=money(risk);
+      $('#history-count').textContent=trades.length;
+    }
+    function render() {
+      renderSummary();
+      const query=$('#search').value.trim().toLowerCase(); const filter=$('#status-filter').value;
+      const sorted=[...trades].filter(t=>(filter==='all'||t.status===filter) && (!query||JSON.stringify(t).toLowerCase().includes(query)))
+        .sort((a,b)=>$('#sort-filter').value==='newest' ? (b.createdAt||'').localeCompare(a.createdAt||'') : (a.createdAt||'').localeCompare(b.createdAt||''));
+      const list=$('#trade-list');
+      if(!sorted.length){list.innerHTML='<div class="empty"><strong>还没有匹配的记录</strong><span>新建计划后，它会一直保留在历史记录中。</span></div>';return;}
+      list.innerHTML=sorted.map(t=>{
+        const pnl=pnlOf(t); const actions=[...(t.actions||[])].sort((a,b)=>b.at.localeCompare(a.at));
+        const badgeClass=t.status==='open'?'open':t.status==='closed'?'closed':t.status==='cancelled'?'cancelled':'planned';
+        const tags=[t.direction,t.timeframe,t.size?`仓位 ${t.size}`:'',Number(t.maxRisk)>0?`最大风险 ${money(t.maxRisk)}`:''].filter(Boolean);
+        return `<article class="panel trade-card" data-id="${esc(t.id)}">
+          <div class="trade-top"><div><div class="trade-name"><h3>${esc(t.asset||'未命名标的')}</h3><span class="badge ${badgeClass}">${statusLabel(t.status)}</span>${t.direction?`<span class="tag">${esc(t.direction)}</span>`:''}</div><div class="trade-date">计划日期 ${esc(t.date||'未填写')} · ${actions.length} 条后续记录</div></div>
+            <div class="trade-stats"><div><div class="metric-label">本笔已实现</div><div class="pnl ${pnl>0?'positive':pnl<0?'negative':''}">${money(pnl)}</div></div><div><div class="metric-label">累计亏损</div><div class="pnl negative">${money((t.actions||[]).reduce((s,a)=>s+Math.max(0,-(Number(a.pnl)||0)),0))}</div></div></div></div>
+          <div class="trade-meta">${tags.map(x=>`<span class="tag">${esc(x)}</span>`).join('')}</div>
+          <div class="trade-controls"><button class="secondary" data-action="edit" type="button">编辑计划</button><button class="danger" data-action="delete" type="button">删除记录</button></div>
+          <details class="trade-details"><summary>计划详情与操作流水</summary>
+            <div class="detail-grid">
+              ${detail('交易理由',t.thesis)}${detail('进场触发',t.entry)}${detail('判断失效 / 止损',t.invalidation)}${detail('退出 / 重新评估',t.exitPlan)}${detail('下单前心理检查',psychText(t.psychology))}${detail('事后复盘',t.review)}${t.migrationNote?detail('迁移提醒',t.migrationNote):''}
+            </div>
+            ${t.status==='closed'||t.status==='cancelled'?'':`<h4 class="action-title">追加后续操作</h4><form class="action-form" data-action-form="${esc(t.id)}">
+              <div><label>操作类型</label><select name="type"><option value="entry">执行进场</option><option value="add">加仓</option><option value="reduce">减仓</option><option value="stop">调整止损</option><option value="take">部分止盈</option><option value="exit">完全退出</option><option value="stopped">止损退出</option><option value="reassess">重新评估</option><option value="cancel">取消计划</option><option value="note">备注</option></select></div>
+              <div class="wide"><label>操作说明</label><textarea name="note" placeholder="发生了什么？为什么这样处理？" required></textarea></div>
+              <div><label>本次已实现盈亏 USD（可空）</label><input name="pnl" type="number" step="0.01" placeholder="亏损填负数"></div><button class="primary" type="submit">追加记录</button>
+            </form>`}
+            <div class="timeline">${actions.length?actions.map(a=>`<div class="event"><div class="event-time">${formatTime(a.at)}</div><div><strong>${esc(actionLabel(a.type))}</strong>${a.note?`<div class="event-note">${esc(a.note)}</div>`:''}</div><div class="event-pnl ${Number(a.pnl)>0?'positive':Number(a.pnl)<0?'negative':''}">${a.pnl==null||a.pnl===''?'':money(a.pnl)} <button class="event-remove" data-action="remove-event" data-event-id="${esc(a.id)}" type="button" title="删除这条操作">×</button></div></div>`).join(''):'<div class="empty" style="padding:17px">还没有后续操作。进场、调整、退出和复盘都可追加在这里。</div>'}</div>
+          </details></article>`;
+      }).join('');
+    }
+    function detail(label,value){return `<div class="detail-cell"><strong>${label}</strong><div>${value?esc(value):'<span style="color:#9aa39d">未填写</span>'}</div></div>`;}
+    function psychText(p={}) { const names={anchor:'价格锚定',regret:'错失收益 / 追单冲动',evidence:'反面证据',flatCheck:'空仓检验'}; return Object.keys(names).map(k=>`${names[k]}：${p[k]?'已检查':'未勾选'}`).join('\n'); }
+    function formatTime(s){try{return new Intl.DateTimeFormat('zh-CN',{dateStyle:'medium',timeStyle:'short'}).format(new Date(s));}catch{return s||'';}}
+    function setTab(id){$$('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));$$('.view').forEach(v=>v.classList.toggle('active',v.id===id));}
+    function resetForm(){editingId=null;$('#trade-form').reset();$('#trade-date').value=today();$('#form-title').textContent='新建一笔交易';$('#save-trade').textContent='保存交易计划';$('#cancel-edit').classList.add('hidden');}
+    function startEdit(t){editingId=t.id;const f=$('#trade-form');f.date.value=t.date||'';f.asset.value=t.asset||'';f.direction.value=t.direction||'';f.timeframe.value=t.timeframe||'';f.thesis.value=t.thesis||'';f.entry.value=t.entry||'';f.invalidation.value=t.invalidation||'';f.size.value=t.size||'';f.maxRisk.value=t.maxRisk??'';f.exitPlan.value=t.exitPlan||'';f.anchor.checked=!!t.psychology?.anchor;f.regret.checked=!!t.psychology?.regret;f.evidence.checked=!!t.psychology?.evidence;f.flatCheck.checked=!!t.psychology?.flatCheck;$('#form-title').textContent='编辑交易计划';$('#save-trade').textContent='保存修改';$('#cancel-edit').classList.remove('hidden');setTab('new-view');window.scrollTo({top:0,behavior:'smooth'});}
+    $('#trade-form').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget;const item={date:f.date.value,asset:f.asset.value.trim(),direction:f.direction.value,timeframe:f.timeframe.value.trim(),thesis:f.thesis.value.trim(),entry:f.entry.value.trim(),invalidation:f.invalidation.value.trim(),size:f.size.value.trim(),maxRisk:f.maxRisk.value===''?null:Number(f.maxRisk.value),exitPlan:f.exitPlan.value.trim(),psychology:{anchor:f.anchor.checked,regret:f.regret.checked,evidence:f.evidence.checked,flatCheck:f.flatCheck.checked}};
+      if(editingId){const t=trades.find(x=>x.id===editingId);if(t)Object.assign(t,item,{updatedAt:stamp()});$('#form-status').textContent='计划已更新，原有操作流水保留。';}
+      else{trades.unshift({...item,id:id(),createdAt:stamp(),status:'planned',actions:[],review:''});$('#form-status').textContent='已保存为一条新计划。';}
+      if(persist()){render();resetForm();setTimeout(()=>$('#form-status').textContent='',3500);}
+    });
+    $('#cancel-edit').addEventListener('click',resetForm);
+    $('#trade-form').addEventListener('reset',()=>setTimeout(()=>{if(!editingId)$('#trade-date').value=today();},0));
+    document.addEventListener('click',e=>{
+      const tab=e.target.closest('[data-tab]');if(tab){setTab(tab.dataset.tab);return;}
+      const btn=e.target.closest('[data-action]');if(!btn)return;const card=btn.closest('[data-id]');if(!card)return;const t=trades.find(x=>x.id===card.dataset.id);if(!t)return;
+      if(btn.dataset.action==='edit')startEdit(t);
+      if(btn.dataset.action==='delete'&&confirm(`删除 ${t.asset} 的整笔记录及其操作流水？此操作无法撤销。`)){trades=trades.filter(x=>x.id!==t.id);persist();render();}
+      if(btn.dataset.action==='remove-event'&&confirm('删除这条操作及其盈亏记录？')){t.actions=t.actions.filter(a=>a.id!==btn.dataset.eventId);persist();render();}
+    });
+    document.addEventListener('submit',e=>{const form=e.target.closest('[data-action-form]');if(!form)return;e.preventDefault();const t=trades.find(x=>x.id===form.dataset.actionForm);if(!t)return;const fd=new FormData(form);const type=String(fd.get('type'));const raw=String(fd.get('pnl')).trim();const ev={id:id(),at:stamp(),type,note:String(fd.get('note')).trim(),pnl:raw===''?null:Number(raw)};t.actions.push(ev);t.updatedAt=stamp();if(type==='entry'||type==='add')t.status='open';if(type==='exit'||type==='stopped')t.status='closed';if(type==='cancel')t.status='cancelled';if(persist())render();});
+    ['search','status-filter','sort-filter'].forEach(x=>$('#'+x).addEventListener(x==='search'?'input':'change',render));
+    $('#export-btn').addEventListener('click',()=>{const blob=new Blob([JSON.stringify({schema:'investing-psychology-journal-v2',exportedAt:stamp(),trades},null,2)],{type:'application/json;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`交易日志备份-${today()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});
+    $('#import-btn').addEventListener('click',()=>$('#import-file').click());
+    $('#import-file').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const data=JSON.parse(await file.text());const incoming=Array.isArray(data)?data:data.trades;if(!Array.isArray(incoming))throw new Error('备份格式不正确');const ids=new Set(trades.map(t=>t.id));const fresh=incoming.filter(t=>t&&t.id&&!ids.has(t.id));if(!fresh.length){alert('备份中没有新的记录。');return;}trades=[...fresh,...trades];if(persist()){render();alert(`已导入 ${fresh.length} 条记录。`);}}catch(err){alert(`导入失败：${err.message}`);}finally{e.target.value='';}});
+    $('#trade-date').value=today();render();
+  })();
   </script>
 </body>
 </html>
