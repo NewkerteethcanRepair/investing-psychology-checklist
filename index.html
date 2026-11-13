@@ -34,7 +34,7 @@
 
     <section class="panel cloud-panel" aria-label="云端同步">
       <div><h2>CloudBase 云端同步</h2><p id="cloud-status" aria-live="polite">尚未登录。登录后，交易和后续流水会同步到云端。</p></div>
-      <div class="cloud-actions" id="cloud-login-controls"><input id="cloud-user" autocomplete="username" placeholder="用户名或邮箱"><input id="cloud-password" type="password" autocomplete="current-password" placeholder="密码"><button class="primary" id="cloud-login" type="button">登录并同步</button></div>
+      <div class="cloud-actions" id="cloud-login-controls"><input id="cloud-user" autocomplete="username" placeholder="用户名或邮箱"><input id="cloud-password" type="password" autocomplete="current-password" placeholder="密码"><input class="hidden" id="cloud-otp" inputmode="numeric" autocomplete="one-time-code" placeholder="邮箱验证码"><button class="primary" id="cloud-login" type="button">登录并同步</button><button class="secondary" id="cloud-register" type="button">注册新账号</button></div>
       <div class="cloud-actions hidden" id="cloud-user-controls"><button class="secondary" id="cloud-import-local" type="button">导入本机记录到云端</button><button class="secondary" id="cloud-logout" type="button">退出云端登录</button></div>
     </section>
     <section class="summary" aria-label="交易汇总">
@@ -81,7 +81,7 @@
         <div class="form-actions"><button class="primary" type="submit" id="save-trade">保存交易计划</button><button class="secondary" type="reset">清空表单</button></div>
         <p class="status" id="form-status" aria-live="polite"></p>
       </form>
-      <div class="notice">本版本把记录保存在当前浏览器中，并支持备份导入 / 导出；换浏览器或设备不会自动同步。页面代码公开，但你的交易记录不会上传到 GitHub。</div>
+      <div class="notice">未登录时记录保存在当前浏览器；登录后会同步到 CloudBase PostgreSQL，同一账号可在不同设备查看。注册账号需要邮箱验证码。页面代码公开，但交易记录保存在数据库，不会写入 GitHub。</div>
     </section>
 
     <section class="view" id="history-view">
@@ -108,6 +108,7 @@
     const cloudAuth = cloudApp?.auth;
     const cloudDb = cloudApp?.rdb?.();
     let cloudUser = null;
+    let pendingVerification = null;
     function cloudMessage(message){$('#cloud-status').textContent=message;}
     function cloudReport(error){cloudMessage(`云端同步失败：${error?.message||error}。本机浏览器记录仍保留。`);}
     function requireCloud(result){if(result?.error)throw result.error;return result?.data;}
@@ -130,6 +131,26 @@
       try{const credentials=login.includes('@')?{email:login,password}:{username:login,password};const result=await cloudAuth.signInWithPassword(credentials);const data=requireCloud(result);if(!data?.user)throw new Error('登录没有返回用户信息');$('#cloud-password').value='';await cloudStart(data.user);}
       catch(error){cloudReport(error);}
       finally{$('#cloud-login').disabled=false;}
+    }
+    async function cloudRegister(){
+      if(!cloudAuth){cloudMessage('CloudBase SDK 加载失败，请检查网络后刷新页面。');return;}
+      const email=$('#cloud-user').value.trim(),password=$('#cloud-password').value;
+      if(!email.includes('@')){cloudMessage('注册时请在“用户名或邮箱”中填写邮箱地址。');return;}
+      if(!password){cloudMessage('请先设置登录密码。');return;}
+      const button=$('#cloud-register');button.disabled=true;
+      try{
+        if(!pendingVerification){
+          const raw=await cloudAuth.getVerification({email});if(raw?.error)throw raw.error;const v=raw?.data||raw;
+          if(!v?.verification_id)throw new Error('没有取得验证码编号，请确认身份认证中已启用邮箱验证码。');
+          pendingVerification={id:v.verification_id,email};$('#cloud-otp').classList.remove('hidden');button.textContent='验证并完成注册';cloudMessage(`验证码已发送到 ${email}，输入邮件中的验证码后再点“验证并完成注册”。`);return;
+        }
+        const code=$('#cloud-otp').value.trim();if(!code){cloudMessage('请输入邮箱收到的验证码。');return;}
+        const verifiedRaw=await cloudAuth.verify({verification_id:pendingVerification.id,verification_code:code});if(verifiedRaw?.error)throw verifiedRaw.error;const verified=verifiedRaw?.data||verifiedRaw;
+        const signupRaw=await cloudAuth.signUp({email:pendingVerification.email,verification_code:code,verification_token:verified.verification_token,password});if(signupRaw?.error)throw signupRaw.error;let user=(signupRaw?.data||signupRaw)?.user;
+        if(!user){const loginRaw=await cloudAuth.signInWithPassword({email:pendingVerification.email,password});if(loginRaw?.error)throw loginRaw.error;user=(loginRaw?.data||loginRaw)?.user;}
+        pendingVerification=null;$('#cloud-otp').value='';$('#cloud-otp').classList.add('hidden');button.textContent='注册新账号';$('#cloud-password').value='';await cloudStart(user);cloudMessage('账号注册成功，已登录并连接云端。');
+      }catch(error){cloudReport(error);}
+      finally{button.disabled=false;}
     }
     async function cloudImportLocal(){
       if(!cloudUser)return;const pending=localSnapshot.filter(t=>t?.id&&!trades.some(c=>c.id===t.id));if(!pending.length){cloudMessage('没有待导入的本机记录。');return;}
@@ -238,6 +259,7 @@
     $('#import-btn').addEventListener('click',()=>$('#import-file').click());
     $('#import-file').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const data=JSON.parse(await file.text());const incoming=Array.isArray(data)?data:data.trades;if(!Array.isArray(incoming))throw new Error('备份格式不正确');const ids=new Set(trades.map(t=>t.id));const fresh=incoming.filter(t=>t&&t.id&&!ids.has(t.id));if(!fresh.length){alert('备份中没有新的记录。');return;}trades=[...fresh,...trades];if(persist()){render();alert(`已导入 ${fresh.length} 条记录。`);}}catch(err){alert(`导入失败：${err.message}`);}finally{e.target.value='';}});
     $('#cloud-login').addEventListener('click',cloudLogin);
+    $('#cloud-register').addEventListener('click',cloudRegister);
     $('#cloud-password').addEventListener('keydown',e=>{if(e.key==='Enter')cloudLogin();});
     $('#cloud-import-local').addEventListener('click',cloudImportLocal);
     $('#cloud-logout').addEventListener('click',async()=>{try{const result=await cloudAuth.signOut();if(result?.error)throw result.error;cloudUser=null;trades=structuredClone(localSnapshot);persist();render();$('#cloud-user-controls').classList.add('hidden');$('#cloud-login-controls').classList.remove('hidden');cloudMessage('已退出云端账户；本机原有记录仍保留。');}catch(error){cloudReport(error);}});
@@ -246,6 +268,7 @@
   </script>
 </body>
 </html>
+
 
 
 
