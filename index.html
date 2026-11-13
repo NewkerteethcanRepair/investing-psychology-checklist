@@ -10,8 +10,10 @@
     *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif}button,input,textarea,select{font:inherit}button{cursor:pointer;border:0;border-radius:9px;padding:10px 14px;font-weight:680;transition:background .15s,transform .15s}button:hover{transform:translateY(-1px)}button:disabled{opacity:.5;cursor:not-allowed;transform:none}.primary{background:var(--green);color:white}.primary:hover{background:var(--green-dark)}.secondary{background:#edf0ea;color:var(--ink)}.secondary:hover{background:#e2e7df}.danger{background:#f8e9e7;color:#873933}.danger:hover{background:#f1d9d6}.quiet{background:transparent;color:var(--muted)}.quiet:hover{background:#eff0e9}
     .shell{width:min(1120px,calc(100% - 32px));margin:auto;padding:34px 0 60px}.eyebrow{display:flex;align-items:center;gap:9px;color:var(--green);font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.eyebrow:before{content:"";width:22px;height:2px;background:var(--green)}header{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin:16px 0 25px}.hero h1{font-size:clamp(32px,5vw,48px);line-height:1.05;letter-spacing:-.045em;margin:0;font-weight:740}.hero p{max-width:700px;margin:12px 0 0;color:var(--muted);font-size:15px}.top-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}.metric{padding:17px 18px;background:var(--card);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow)}.metric-label{color:var(--muted);font-size:12px}.metric-value{font-size:25px;font-weight:740;letter-spacing:-.035em;margin-top:3px;font-variant-numeric:tabular-nums}.metric-sub{font-size:11px;color:var(--muted);margin-top:2px}.positive{color:var(--green)}.negative{color:var(--red)}
     .tabs{display:flex;gap:7px;border-bottom:1px solid var(--line);margin:0 0 18px}.tab{background:transparent;color:var(--muted);border-radius:8px 8px 0 0;padding:10px 15px;border-bottom:2px solid transparent}.tab.active{color:var(--green-dark);border-color:var(--green);background:rgba(255,255,255,.45)}.view{display:none}.view.active{display:block}.panel{background:var(--card);border:1px solid var(--line);border-radius:15px;box-shadow:var(--shadow)}.form-panel{padding:23px}.section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding-bottom:17px;border-bottom:1px solid var(--line)}.section-head h2{margin:0;font-size:18px;letter-spacing:-.02em}.section-head p{margin:4px 0 0;color:var(--muted);font-size:12px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px 15px}.field{min-width:0}.field.full{grid-column:1/-1}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}.field small{display:block;color:var(--muted);font-size:11px;margin-top:5px}.field input,.field textarea,.field select,.search{width:100%;border:1px solid #dfe2d9;border-radius:9px;padding:10px 11px;background:#fff;color:var(--ink);outline:none}.field textarea{min-height:77px;resize:vertical}.field input:focus,.field textarea:focus,.field select:focus,.search:focus{border-color:#7aaa92;box-shadow:0 0 0 3px rgba(33,107,80,.1)}.field input::placeholder,.field textarea::placeholder{color:#9aa39d}.form-section{margin-top:20px}.form-section h3{margin:0 0 12px;font-size:14px}.psychology{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.check{display:flex;gap:9px;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:12px;align-items:flex-start;background:#fff}.check input{accent-color:var(--green);margin:3px 0 0}.check strong{display:block;font-size:12px}.check span{color:var(--muted)}.form-actions{display:flex;gap:9px;align-items:center;margin-top:19px;flex-wrap:wrap}.status{font-size:12px;color:var(--muted);min-height:18px;margin:10px 0 0}.notice{margin-top:16px;padding:12px 14px;background:var(--amber);border:1px solid #f0dfb6;border-radius:10px;color:#715e3e;font-size:12px}
+    .cloud-panel{padding:15px 17px;margin:-7px 0 18px;display:flex;justify-content:space-between;gap:15px;align-items:center}.cloud-panel h2{font-size:14px;margin:0 0 3px}.cloud-panel p{margin:0;color:var(--muted);font-size:12px}.cloud-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.cloud-actions input{width:190px;border:1px solid #dfe2d9;border-radius:8px;padding:9px}.cloud-panel button{font-size:12px;padding:9px 11px}
     .history-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 13px}.history-head h2{margin:0;font-size:19px}.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.search{width:min(240px,50vw)}.filters select{border:1px solid var(--line);background:white;border-radius:9px;padding:9px;color:var(--ink)}.trade-list{display:grid;gap:12px}.empty{padding:46px 20px;text-align:center;color:var(--muted);border:1px dashed #cdd3ca;border-radius:14px;background:rgba(255,255,255,.4)}.empty strong{display:block;color:var(--ink);font-size:16px;margin-bottom:5px}.trade-card{padding:17px 18px}.trade-top{display:flex;justify-content:space-between;gap:15px;align-items:flex-start}.trade-name{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.trade-name h3{font-size:17px;margin:0}.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:var(--mint);color:var(--green-dark);font-size:11px;font-weight:700}.badge.open{background:#e8f1fb;color:#315e8a}.badge.closed{background:#edf0ea;color:#526058}.badge.cancelled{background:#f2e9e7;color:#805650}.badge.planned{background:#fff4df;color:#795c26}.trade-date{color:var(--muted);font-size:12px;margin-top:4px}.trade-stats{display:flex;gap:18px;align-items:center;flex-wrap:wrap;text-align:right}.pnl{font-weight:730;font-variant-numeric:tabular-nums}.trade-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.tag{padding:4px 8px;background:#f1f2ec;border-radius:7px;font-size:11px;color:#56645c}.trade-controls{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px}.trade-controls button{font-size:12px;padding:8px 10px}.trade-details{border-top:1px solid var(--line);margin-top:14px;padding-top:13px}.trade-details summary{cursor:pointer;color:var(--green-dark);font-weight:700;font-size:12px}.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin:13px 0}.detail-cell{padding:10px;background:#f7f7f2;border-radius:9px;min-width:0}.detail-cell strong{display:block;font-size:11px;color:var(--muted);margin-bottom:3px}.detail-cell div{white-space:pre-wrap;overflow-wrap:anywhere}.action-title{font-size:13px;margin:18px 0 10px}.action-form{display:grid;grid-template-columns:1fr 1fr 120px auto;gap:8px;align-items:end;padding:12px;background:#f7f7f2;border-radius:11px}.action-form label{display:block;font-size:10px;font-weight:700;margin-bottom:4px}.action-form select,.action-form input,.action-form textarea{width:100%;border:1px solid #dfe2d9;border-radius:8px;padding:8px;background:white;color:var(--ink)}.action-form textarea{min-height:38px;resize:vertical}.action-form button{padding:9px 11px;font-size:11px}.timeline{display:grid;gap:0;margin-top:11px}.event{position:relative;display:grid;grid-template-columns:145px 1fr auto;gap:11px;padding:10px 0;border-top:1px solid var(--line);font-size:12px}.event-time{color:var(--muted);font-size:11px}.event-note{white-space:pre-wrap;overflow-wrap:anywhere}.event-pnl{font-weight:700;white-space:nowrap}.event-remove{background:transparent;padding:2px 5px;color:#8c7772;font-size:11px}.backup-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.privacy{font-size:11px;color:var(--muted);margin-top:20px}.hidden{display:none!important}.file-input{display:none}
     @media(max-width:800px){header{display:block}.top-actions{justify-content:flex-start;margin-top:16px}.summary{grid-template-columns:repeat(2,1fr)}.action-form{grid-template-columns:1fr 1fr}.action-form .wide{grid-column:1/-1}.trade-top{display:block}.trade-stats{text-align:left;margin-top:9px}.event{grid-template-columns:115px 1fr auto}}
+    @media(max-width:800px){.cloud-panel{display:block}.cloud-actions{margin-top:11px}.cloud-actions input{width:min(100%,220px)}}
     @media(max-width:520px){.shell{width:calc(100% - 22px);padding-top:24px}.summary{gap:8px}.metric{padding:13px}.metric-value{font-size:21px}.form-panel{padding:16px}.form-grid,.psychology,.detail-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.history-head{display:block}.filters{margin-top:11px}.search{width:100%;flex:1}.filters select{flex:0 0 120px}.action-form{grid-template-columns:1fr}.action-form .wide{grid-column:auto}.event{grid-template-columns:1fr auto;gap:3px}.event-time{grid-column:1/-1}.tabs{overflow:auto}.tab{white-space:nowrap}}
   </style>
 </head>
@@ -30,6 +32,11 @@
       </div>
     </header>
 
+    <section class="panel cloud-panel" aria-label="云端同步">
+      <div><h2>CloudBase 云端同步</h2><p id="cloud-status" aria-live="polite">尚未登录。登录后，交易和后续流水会同步到云端。</p></div>
+      <div class="cloud-actions" id="cloud-login-controls"><input id="cloud-user" autocomplete="username" placeholder="用户名或邮箱"><input id="cloud-password" type="password" autocomplete="current-password" placeholder="密码"><button class="primary" id="cloud-login" type="button">登录并同步</button></div>
+      <div class="cloud-actions hidden" id="cloud-user-controls"><button class="secondary" id="cloud-import-local" type="button">导入本机记录到云端</button><button class="secondary" id="cloud-logout" type="button">退出云端登录</button></div>
+    </section>
     <section class="summary" aria-label="交易汇总">
       <div class="metric"><div class="metric-label">计划 / 持仓</div><div class="metric-value" id="active-count">0</div><div class="metric-sub">未结束记录</div></div>
       <div class="metric"><div class="metric-label">已实现净盈亏</div><div class="metric-value" id="net-pnl">$0.00</div><div class="metric-sub">按操作流水累计</div></div>
@@ -84,6 +91,7 @@
     </section>
     <footer class="privacy">这是个人记录工具，不会判断市场方向，也不构成投资建议。定期导出 JSON 备份，避免浏览器数据被清理后丢失。</footer>
   </main>
+  <script src="https://static.cloudbase.net/cloudbase-js-sdk/3.0.1/cloudbase.full.js"></script>
   <script>
   (() => {
     const STORE = 'investing-psychology-journal-v2';
@@ -94,7 +102,47 @@
     const id = () => (globalThis.crypto?.randomUUID?.() || `trade-${Date.now()}-${Math.random().toString(36).slice(2,9)}`);
     const stamp = () => new Date().toISOString();
     let trades = load();
+    const localSnapshot = structuredClone(trades);
     let editingId = null;
+    const cloudApp = window.cloudbase?.init({env:'disciplinary-rabbit-d0bm123b1750',region:'ap-shanghai',accessKey:'eyJhbGciOiJSUzI1NiIsImtpZCI6ImY4Y2ZjNDAyLTZiYjgtNDA3ZC1iYWRjLTkyZDRkMTg3NDUyMSJ9.eyJpc3MiOiJodHRwczovL2Rpc2NpcGxpbmFyeS1yYWJiaXQtZDBibTEyM2IxNzUwLmFwLXNoYW5naGFpLnRjYi1hcGkudGVuY2VudGNsb3VkYXBpLmNvbSIsInN1YiI6ImFub24iLCJhdWQiOiJkaXNjaXBsaW5hcnktcmFiYml0LWQwYm0xMjNiMTc1MCIsImV4cCI6NDA5ODIyMjg1MSwiaWF0IjoxNzk0NTM5NjUxLCJub25jZSI6IlNiM3NnUEdTUVZxRDZHUWJaNlNEdWciLCJhdF9oYXNoIjoiU2Izc2dQR1NRVnFENkdRYlo2U0R1ZyIsIm5hbWUiOiJBbm9ueW1vdXMiLCJzY29wZSI6ImFub255bW91cyIsInByb2plY3RfaWQiOiJkaXNjaXBsaW5hcnktcmFiYml0LWQwYm0xMjNiMTc1MCIsIm1ldGEiOnsicGxhdGZvcm0iOiJQdWJsaXNoYWJsZUtleSJ9LCJyb2xlIjoiYW5vbiIsImlzX2Fub255bW91cyI6dHJ1ZSwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiYW5vbnltb3VzIiwicHJvdmlkZXJzIjpbImFub255bW91cyJdfSwidXNlcl9tZXRhZGF0YSI6eyJuYW1lIjoiQW5vbnltb3VzIn0sInVzZXJfdHlwZSI6IiIsImNsaWVudF90eXBlIjoiY2xpZW50X3VzZXIiLCJpc19zeXN0ZW1fYWRtaW4iOmZhbHNlfQ.c75M8ekxTrsv-lAH3Q6jKK5g3gddFbJLpfa3k-x4QuaByKxhgpRArtC16I_I8CSbL5L6YkPHO-n5fW3gTgxdfCiU1brgEnziVXcq9vwIIPcWRrYk47sbX9wVpv5wNaZBrr7vpN21jXHrd3nib0TYZwyiQsLQ9Pi5dhUbFa4Pjb1JlnD9io8NLfkuLfMeWvCE7as_CpWcY8Ks5LH9xna8obP5A5QMXWSlkcBF1609PWimJi_ChvFerEFFPt3sCWGeFpiIGmGcSeuX0aJVCNaGRIJaPHrFUbJbCnStWLoEEbIgAR-ogNzu0ke6b-i2yo7iu9whLqoDA4wtZcacMxxTaw'});
+    const cloudAuth = cloudApp?.auth;
+    const cloudDb = cloudApp?.rdb?.();
+    let cloudUser = null;
+    function cloudMessage(message){$('#cloud-status').textContent=message;}
+    function cloudReport(error){cloudMessage(`云端同步失败：${error?.message||error}。本机浏览器记录仍保留。`);}
+    function requireCloud(result){if(result?.error)throw result.error;return result?.data;}
+    function cloudTradeRow(t){return {id:t.id,trade_date:t.date,asset:t.asset,direction:t.direction||'',timeframe:t.timeframe||'',thesis:t.thesis||'',entry_trigger:t.entry||'',invalidation:t.invalidation||'',position_size:t.size||'',planned_max_loss:t.maxRisk,exit_plan:t.exitPlan||'',status:t.status||'planned',psychology:t.psychology||{},review:t.review||'',updated_at:t.updatedAt||stamp()};}
+    function fromCloudTrade(r,actions){return {id:r.id,date:r.trade_date,asset:r.asset,direction:r.direction||'',timeframe:r.timeframe||'',thesis:r.thesis||'',entry:r.entry_trigger||'',invalidation:r.invalidation||'',size:r.position_size||'',maxRisk:r.planned_max_loss==null?null:Number(r.planned_max_loss),exitPlan:r.exit_plan||'',status:r.status||'planned',psychology:r.psychology||{},review:r.review||'',createdAt:r.created_at||stamp(),updatedAt:r.updated_at||r.created_at||stamp(),actions:actions.filter(a=>a.trade_id===r.id).map(a=>({id:a.id,at:a.occurred_at,type:a.action_type,note:a.note||'',pnl:a.realized_pnl==null?null:Number(a.realized_pnl)}))};}
+    async function cloudLoad(){
+      const [tr,ar]=await Promise.all([cloudDb.from('trade_records').select('*').order('created_at',{ascending:false}),cloudDb.from('trade_actions').select('*').order('occurred_at',{ascending:false})]);
+      const records=requireCloud(tr)||[], actions=requireCloud(ar)||[]; trades=records.map(r=>fromCloudTrade(r,actions)); persist(); render();
+      cloudMessage(`已连接云端：${cloudUser?.email||cloudUser?.username||'当前账户'}，共 ${trades.length} 条记录。`);
+      $('#cloud-login-controls').classList.add('hidden');$('#cloud-user-controls').classList.remove('hidden');
+    }
+    async function cloudWriteTrade(t,isNew=false){if(!cloudUser)return;const q=cloudDb.from('trade_records');const result=isNew?await q.insert(cloudTradeRow(t)):await q.update(cloudTradeRow(t)).eq('id',t.id);requireCloud(result);}
+    async function cloudWriteAction(t,a){if(!cloudUser)return;requireCloud(await cloudDb.from('trade_actions').insert({id:a.id,trade_id:t.id,action_type:a.type,note:a.note||'',realized_pnl:a.pnl,occurred_at:a.at}));requireCloud(await cloudDb.from('trade_records').update({status:t.status,updated_at:t.updatedAt}).eq('id',t.id));}
+    async function cloudStart(user){cloudUser=user;await cloudLoad();}
+    async function cloudLogin(){
+      if(!cloudAuth||!cloudDb){cloudMessage('CloudBase SDK 加载失败，请检查网络后刷新页面。');return;}
+      const login=$('#cloud-user').value.trim(),password=$('#cloud-password').value;
+      if(!login||!password){cloudMessage('请输入用户名或邮箱，以及密码。');return;}
+      $('#cloud-login').disabled=true;cloudMessage('正在登录并读取云端记录…');
+      try{const credentials=login.includes('@')?{email:login,password}:{username:login,password};const result=await cloudAuth.signInWithPassword(credentials);const data=requireCloud(result);if(!data?.user)throw new Error('登录没有返回用户信息');$('#cloud-password').value='';await cloudStart(data.user);}
+      catch(error){cloudReport(error);}
+      finally{$('#cloud-login').disabled=false;}
+    }
+    async function cloudImportLocal(){
+      if(!cloudUser)return;const pending=localSnapshot.filter(t=>t?.id&&!trades.some(c=>c.id===t.id));if(!pending.length){cloudMessage('没有待导入的本机记录。');return;}
+      const button=$('#cloud-import-local');button.disabled=true;let count=0;
+      try{for(const t of pending){await cloudWriteTrade(t,true);for(const a of (t.actions||[]))await cloudWriteAction(t,a);count++;}await cloudLoad();cloudMessage(`已导入 ${count} 条本机记录到云端。`);}
+      catch(error){cloudReport(error);}
+      finally{button.disabled=false;}
+    }
+    async function cloudInit(){
+      if(!cloudAuth||!cloudDb){cloudMessage('CloudBase SDK 加载失败；本机记录仍可使用。');return;}
+      try{const result=await cloudAuth.getSession();if(result?.error)throw result.error;if(result?.data?.session?.user)await cloudStart(result.data.session.user);}
+      catch(error){cloudReport(error);}
+    }
 
     function load() {
       try {
@@ -163,15 +211,17 @@
       }).join('');
     }
     function detail(label,value){return `<div class="detail-cell"><strong>${label}</strong><div>${value?esc(value):'<span style="color:#9aa39d">未填写</span>'}</div></div>`;}
-    function psychText(p={}) { const names={anchor:'价格锚定',regret:'错失收益 / 追单冲动',evidence:'反面证据',flatCheck:'空仓检验'}; return Object.keys(names).map(k=>`${names[k]}：${p[k]?'已检查':'未勾选'}`).join('\n'); }
+    function psychText(p={}) { const names={anchor:'价格锚定',regret:'错失收益 / 追单冲动',evidence:'反面证据',flatCheck:'空仓检验'}; return Object.keys(names).map(k=>`${names[k]}：${p[k]?'已检查':'未勾选'}`).join('
+'); }
     function formatTime(s){try{return new Intl.DateTimeFormat('zh-CN',{dateStyle:'medium',timeStyle:'short'}).format(new Date(s));}catch{return s||'';}}
     function setTab(id){$$('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));$$('.view').forEach(v=>v.classList.toggle('active',v.id===id));}
     function resetForm(){editingId=null;$('#trade-form').reset();$('#trade-date').value=today();$('#form-title').textContent='新建一笔交易';$('#save-trade').textContent='保存交易计划';$('#cancel-edit').classList.add('hidden');}
     function startEdit(t){editingId=t.id;const f=$('#trade-form');f.date.value=t.date||'';f.asset.value=t.asset||'';f.direction.value=t.direction||'';f.timeframe.value=t.timeframe||'';f.thesis.value=t.thesis||'';f.entry.value=t.entry||'';f.invalidation.value=t.invalidation||'';f.size.value=t.size||'';f.maxRisk.value=t.maxRisk??'';f.exitPlan.value=t.exitPlan||'';f.anchor.checked=!!t.psychology?.anchor;f.regret.checked=!!t.psychology?.regret;f.evidence.checked=!!t.psychology?.evidence;f.flatCheck.checked=!!t.psychology?.flatCheck;$('#form-title').textContent='编辑交易计划';$('#save-trade').textContent='保存修改';$('#cancel-edit').classList.remove('hidden');setTab('new-view');window.scrollTo({top:0,behavior:'smooth'});}
     $('#trade-form').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget;const item={date:f.date.value,asset:f.asset.value.trim(),direction:f.direction.value,timeframe:f.timeframe.value.trim(),thesis:f.thesis.value.trim(),entry:f.entry.value.trim(),invalidation:f.invalidation.value.trim(),size:f.size.value.trim(),maxRisk:f.maxRisk.value===''?null:Number(f.maxRisk.value),exitPlan:f.exitPlan.value.trim(),psychology:{anchor:f.anchor.checked,regret:f.regret.checked,evidence:f.evidence.checked,flatCheck:f.flatCheck.checked}};
-      if(editingId){const t=trades.find(x=>x.id===editingId);if(t)Object.assign(t,item,{updatedAt:stamp()});$('#form-status').textContent='计划已更新，原有操作流水保留。';}
-      else{trades.unshift({...item,id:id(),createdAt:stamp(),status:'planned',actions:[],review:''});$('#form-status').textContent='已保存为一条新计划。';}
-      if(persist()){render();resetForm();setTimeout(()=>$('#form-status').textContent='',3500);}
+      const isNew=!editingId;let saved;
+      if(editingId){saved=trades.find(x=>x.id===editingId);if(saved)Object.assign(saved,item,{updatedAt:stamp()});$('#form-status').textContent='计划已更新，原有操作流水保留。';}
+      else{saved={...item,id:id(),createdAt:stamp(),status:'planned',actions:[],review:''};trades.unshift(saved);$('#form-status').textContent='已保存为一条新计划。';}
+      if(persist()){render();resetForm();if(cloudUser&&saved)cloudWriteTrade(saved,isNew).then(()=>cloudMessage('交易计划已保存并同步到云端。')).catch(cloudReport);setTimeout(()=>$('#form-status').textContent='',3500);}
     });
     $('#cancel-edit').addEventListener('click',resetForm);
     $('#trade-form').addEventListener('reset',()=>setTimeout(()=>{if(!editingId)$('#trade-date').value=today();},0));
@@ -179,17 +229,25 @@
       const tab=e.target.closest('[data-tab]');if(tab){setTab(tab.dataset.tab);return;}
       const btn=e.target.closest('[data-action]');if(!btn)return;const card=btn.closest('[data-id]');if(!card)return;const t=trades.find(x=>x.id===card.dataset.id);if(!t)return;
       if(btn.dataset.action==='edit')startEdit(t);
-      if(btn.dataset.action==='delete'&&confirm(`删除 ${t.asset} 的整笔记录及其操作流水？此操作无法撤销。`)){trades=trades.filter(x=>x.id!==t.id);persist();render();}
-      if(btn.dataset.action==='remove-event'&&confirm('删除这条操作及其盈亏记录？')){t.actions=t.actions.filter(a=>a.id!==btn.dataset.eventId);persist();render();}
+      if(btn.dataset.action==='delete'&&confirm(`删除 ${t.asset} 的整笔记录及其操作流水？此操作无法撤销。`)){trades=trades.filter(x=>x.id!==t.id);persist();render();if(cloudUser)cloudDb.from('trade_records').delete().eq('id',t.id).then(requireCloud).then(()=>cloudMessage('云端记录已删除。')).catch(cloudReport);}
+      if(btn.dataset.action==='remove-event'&&confirm('删除这条操作及其盈亏记录？')){const eventId=btn.dataset.eventId;t.actions=t.actions.filter(a=>a.id!==eventId);persist();render();if(cloudUser)cloudDb.from('trade_actions').delete().eq('id',eventId).then(requireCloud).then(()=>cloudMessage('云端操作流水已删除。')).catch(cloudReport);}
     });
-    document.addEventListener('submit',e=>{const form=e.target.closest('[data-action-form]');if(!form)return;e.preventDefault();const t=trades.find(x=>x.id===form.dataset.actionForm);if(!t)return;const fd=new FormData(form);const type=String(fd.get('type'));const raw=String(fd.get('pnl')).trim();const ev={id:id(),at:stamp(),type,note:String(fd.get('note')).trim(),pnl:raw===''?null:Number(raw)};t.actions.push(ev);t.updatedAt=stamp();if(type==='entry'||type==='add')t.status='open';if(type==='exit'||type==='stopped')t.status='closed';if(type==='cancel')t.status='cancelled';if(persist())render();});
+    document.addEventListener('submit',e=>{const form=e.target.closest('[data-action-form]');if(!form)return;e.preventDefault();const t=trades.find(x=>x.id===form.dataset.actionForm);if(!t)return;const fd=new FormData(form);const type=String(fd.get('type'));const raw=String(fd.get('pnl')).trim();const ev={id:id(),at:stamp(),type,note:String(fd.get('note')).trim(),pnl:raw===''?null:Number(raw)};t.actions.push(ev);t.updatedAt=stamp();if(type==='entry'||type==='add')t.status='open';if(type==='exit'||type==='stopped')t.status='closed';if(type==='cancel')t.status='cancelled';if(persist()){render();if(cloudUser)cloudWriteAction(t,ev).then(()=>cloudMessage('后续操作已同步到云端。')).catch(cloudReport);}});
     ['search','status-filter','sort-filter'].forEach(x=>$('#'+x).addEventListener(x==='search'?'input':'change',render));
     $('#export-btn').addEventListener('click',()=>{const blob=new Blob([JSON.stringify({schema:'investing-psychology-journal-v2',exportedAt:stamp(),trades},null,2)],{type:'application/json;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`交易日志备份-${today()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});
     $('#import-btn').addEventListener('click',()=>$('#import-file').click());
     $('#import-file').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const data=JSON.parse(await file.text());const incoming=Array.isArray(data)?data:data.trades;if(!Array.isArray(incoming))throw new Error('备份格式不正确');const ids=new Set(trades.map(t=>t.id));const fresh=incoming.filter(t=>t&&t.id&&!ids.has(t.id));if(!fresh.length){alert('备份中没有新的记录。');return;}trades=[...fresh,...trades];if(persist()){render();alert(`已导入 ${fresh.length} 条记录。`);}}catch(err){alert(`导入失败：${err.message}`);}finally{e.target.value='';}});
-    $('#trade-date').value=today();render();
+    $('#cloud-login').addEventListener('click',cloudLogin);
+    $('#cloud-password').addEventListener('keydown',e=>{if(e.key==='Enter')cloudLogin();});
+    $('#cloud-import-local').addEventListener('click',cloudImportLocal);
+    $('#cloud-logout').addEventListener('click',async()=>{try{const result=await cloudAuth.signOut();if(result?.error)throw result.error;cloudUser=null;trades=structuredClone(localSnapshot);persist();render();$('#cloud-user-controls').classList.add('hidden');$('#cloud-login-controls').classList.remove('hidden');cloudMessage('已退出云端账户；本机原有记录仍保留。');}catch(error){cloudReport(error);}});
+    $('#trade-date').value=today();render();cloudInit();
   })();
   </script>
 </body>
 </html>
+
+
+
+
 
