@@ -395,6 +395,22 @@ export default function useJournal() {
             .eq("id", t.id),
         );
       }
+      async function cloudUpdateAction(t, a) {
+        if (!cloudUser) return;
+        requireCloud(
+          await cloudDb.from("trade_actions").update({
+            action_type: a.type,
+            note: a.note || "",
+            realized_pnl: a.pnl,
+            occurred_at: a.at,
+          }).eq("id", a.id),
+        );
+        requireCloud(
+          await cloudDb.from("trade_records")
+            .update({ status: t.status, updated_at: t.updatedAt })
+            .eq("id", t.id),
+        );
+      }
       async function cloudStart(user) {
         cloudUser = user;
         await cloudLoad();
@@ -736,11 +752,11 @@ export default function useJournal() {
             )}${detail("判断失效 / 止损", t.invalidation)}${detail(
               "退出 / 重新评估",
               t.exitPlan,
-            )}${detail("下单前心理检查", psychText(t.psychology))}${detail(
+            )}${detail("下单时心理记录", psychText(t.psychology))}${detail(
               "事后复盘",
               t.review,
             )}${t.migrationNote ? detail("迁移提醒", t.migrationNote) : ""}
-            </div>
+            </div>${t.psychology?.stage === "before" && t.psychology?.gates && !Object.values(t.psychology.gates).every(Boolean) ? '<div class="gate-block-notice">事前检查未全部通过 · 请调整后再考虑执行</div>' : ""}
             ${
               t.status === "closed" || t.status === "cancelled"
                 ? ""
@@ -773,7 +789,9 @@ export default function useJournal() {
                             : ""
                         }">${
                           a.pnl == null || a.pnl === "" ? "" : money(a.pnl)
-                        } <button class="event-remove" data-action="remove-event" data-event-id="${esc(
+                        } <button class="event-edit" data-action="edit-event" data-event-id="${esc(
+                          a.id,
+                        )}" type="button" title="编辑这条操作">编辑</button><button class="event-remove" data-action="remove-event" data-event-id="${esc(
                           a.id,
                         )}" type="button" title="删除这条操作">×</button></div></div>`,
                     )
@@ -791,14 +809,22 @@ export default function useJournal() {
       }
       function psychText(p = {}) {
         const names = {
-          anchor: "价格锚定",
-          regret: "错失收益 / 追单冲动",
-          evidence: "反面证据",
-          flatCheck: "空仓检验",
+          urgency: "害怕错过",
+          impulse: "先行动后思考",
+          relief: "情绪驱动",
+          ruleBreak: "偏离规则",
         };
-        return Object.keys(names)
-          .map((k) => `${names[k]}：${p[k] ? "已检查" : "未勾选"}`)
-          .join("\n");
+        const checks = Object.keys(names)
+          .map((k) => `${names[k]}：${p[k] ? "是" : "否"}`)
+          .join("；");
+        return [
+          p.stage === "after" ? "下单后补记（未完成事前门槛）" : "下单前记录",
+          p.gates ? `事前检查${Object.values(p.gates).every(Boolean) ? "：全部通过" : "：未全部通过（先调整，不要执行）"}；策略条件${p.gates.setup ? "是" : "否/未确认"}、失效条件${p.gates.invalidation ? "是" : "否/未确认"}、风险核算${p.gates.risk ? "是" : "否/未确认"}、止损接受${p.gates.accept ? "是" : "否/未确认"}` : "",
+          p.emotion ? `情绪：${p.emotion}` : "",
+          p.trigger ? `触发点：${p.trigger}` : "",
+          `心理信号：${checks}`,
+          p.skipped ? `跳过/偏离：${p.skipped}` : "",
+        ].filter(Boolean).join("\n");
       }
       function formatTime(s) {
         try {
@@ -809,6 +835,34 @@ export default function useJournal() {
         } catch {
           return s || "";
         }
+      }
+      function localDateTimeValue(value) {
+        const date = new Date(value || stamp());
+        return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+          .toISOString().slice(0, 16);
+      }
+      function editEventMarkup(action) {
+        const types = ["entry", "add", "reduce", "stop", "take", "exit", "stopped", "reassess", "cancel", "note"];
+        return `<form class="event-edit-form" data-event-edit data-event-id="${esc(action.id)}">
+          <label>发生时间<input name="at" type="datetime-local" required value="${localDateTimeValue(action.at)}"></label>
+          <label>操作类型<select name="type">${types.map((type) => `<option value="${type}" ${action.type === type ? "selected" : ""}>${actionLabel(type)}</option>`).join("")}</select></label>
+          <label class="wide">操作说明<textarea name="note" required>${esc(action.note || "")}</textarea></label>
+          <label>已实现盈亏 USD<input name="pnl" type="number" step="0.01" value="${action.pnl == null ? "" : esc(action.pnl)}" placeholder="亏损填负数"></label>
+          <div class="event-edit-actions"><button class="primary" type="submit">保存流水修改</button><button class="secondary" type="button" data-action="cancel-event-edit">取消</button></div>
+        </form>`;
+      }
+      function statusFromActions(t) {
+        const statefulActions = (t.actions || []).filter((action) =>
+          ["entry", "add", "exit", "stopped", "cancel"].includes(action.type),
+        );
+        if (!statefulActions.length) return t.status;
+        let status = "planned";
+        [...statefulActions].sort((a, b) => a.at.localeCompare(b.at)).forEach((action) => {
+          if (action.type === "entry" || action.type === "add") status = "open";
+          if (action.type === "exit" || action.type === "stopped") status = "closed";
+          if (action.type === "cancel") status = "cancelled";
+        });
+        return status;
       }
       function setTab(id) {
         $$(".tab").forEach((b) =>
@@ -840,27 +894,43 @@ export default function useJournal() {
       function resetForm() {
         editingId = null;
         $("#trade-form").reset();
+        $("#form-errors").classList.add("hidden");
+        $$(".field-invalid, .check-invalid").forEach((el) => el.classList.remove("field-invalid", "check-invalid"));
+        $("#trade-form").classList.remove("editing-mode");
         $("#trade-date").value = today();
         positionList.innerHTML = "";
         addPosition();
         $("#form-title").textContent = "新建一笔交易";
-        $("#save-trade").textContent = "保存交易计划";
+        $("#form-mode-title").textContent = "新建模式";
+        $("#form-mode-description").textContent = "提交后会创建一条新的交易记录。";
+        $("#save-trade").textContent = "创建新交易记录";
         $("#cancel-edit").classList.add("hidden");
       }
       function startEdit(t) {
         editingId = t.id;
+        $("#trade-form").classList.add("editing-mode");
         const f = $("#trade-form");
         f.date.value = t.date || "";
         f.timeframe.value = t.timeframe || "";
         f.thesis.value = t.thesis || "";
         positionList.innerHTML = "";
         addPosition(t);
-        f.anchor.checked = !!t.psychology?.anchor;
-        f.regret.checked = !!t.psychology?.regret;
-        f.evidence.checked = !!t.psychology?.evidence;
-        f.flatCheck.checked = !!t.psychology?.flatCheck;
+        f.entryStage.value = t.psychology?.stage || "before";
+        f.urgency.checked = !!t.psychology?.urgency;
+        f.impulse.checked = !!t.psychology?.impulse;
+        f.relief.checked = !!t.psychology?.relief;
+        f.ruleBreak.checked = !!t.psychology?.ruleBreak;
+        f.emotion.value = t.psychology?.emotion || "";
+        f.trigger.value = t.psychology?.trigger || "";
+        f.skipped.value = t.psychology?.skipped || "";
+        f.gateSetup.checked = !!t.psychology?.gates?.setup;
+        f.gateInvalidation.checked = !!t.psychology?.gates?.invalidation;
+        f.gateRisk.checked = !!t.psychology?.gates?.risk;
+        f.gateAccept.checked = !!t.psychology?.gates?.accept;
         $("#form-title").textContent = "编辑交易计划";
-        $("#save-trade").textContent = "保存修改";
+        $("#form-mode-title").textContent = "编辑模式 · 不会新建交易";
+        $("#form-mode-description").textContent = `正在修改「${t.asset || "未命名标的"}」的已有记录。保存只会更新这条记录，原有操作流水会保留。`;
+        $("#save-trade").textContent = "保存修改到这条记录";
         $("#cancel-edit").classList.remove("hidden");
         setTab("new-view");
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -868,18 +938,63 @@ export default function useJournal() {
       $("#trade-form").addEventListener("submit", (e) => {
         e.preventDefault();
         const f = e.currentTarget;
+        const entryStage = f.entryStage.value;
+        const gates = {
+          setup: f.gateSetup.checked,
+          invalidation: f.gateInvalidation.checked,
+          risk: f.gateRisk.checked,
+          accept: f.gateAccept.checked,
+        };
+        const missing = [];
+        let firstMissing = null;
+        $("#form-errors").classList.add("hidden");
+        $$(".field-invalid, .check-invalid").forEach((el) => el.classList.remove("field-invalid", "check-invalid"));
+        if (!f.date.value) {
+          missing.push("交易日期 / 计划日期");
+          firstMissing ||= $("#trade-date");
+          $("#trade-date").classList.add("field-invalid");
+        }
+        const rows = [...positionList.querySelectorAll(".position-row")];
+        rows.forEach((row, index) => {
+          const assetInput = row.querySelector('[data-key="asset"]');
+          if (!assetInput.value.trim()) {
+            missing.push(rows.length > 1 ? `第 ${index + 1} 个品种` : "品种");
+            firstMissing ||= assetInput;
+            assetInput.classList.add("field-invalid");
+          }
+        });
+        if (missing.length) {
+          const list = $("#form-error-list");
+          list.replaceChildren(...missing.map((item) => {
+            const li = document.createElement("li");
+            li.textContent = item;
+            return li;
+          }));
+          $("#form-errors").classList.remove("hidden");
+          $("#form-status").textContent = "尚未保存，请补全下面列出的内容。";
+          firstMissing?.scrollIntoView({ behavior: "smooth", block: "center" });
+          return;
+        }
         const shared = {
           date: f.date.value,
           timeframe: f.timeframe.value.trim(),
           thesis: f.thesis.value.trim(),
           psychology: {
-            anchor: f.anchor.checked,
-            regret: f.regret.checked,
-            evidence: f.evidence.checked,
-            flatCheck: f.flatCheck.checked,
+            ...trades.find((x) => x.id === editingId)?.psychology,
+            stage: entryStage,
+            gates,
+            gateOutcome: entryStage === "before"
+              ? (Object.values(gates).every(Boolean) ? "passed" : "blocked")
+              : "after-entry",
+            urgency: f.urgency.checked,
+            impulse: f.impulse.checked,
+            relief: f.relief.checked,
+            ruleBreak: f.ruleBreak.checked,
+            emotion: f.emotion.value,
+            trigger: f.trigger.value.trim(),
+            skipped: f.skipped.value.trim(),
           },
         };
-        const rows = [...positionList.querySelectorAll(".position-row")];
         const items = rows.map((row) => {
           const value = (key) => row.querySelector(`[data-key="${key}"]`).value.trim();
           const entryPrice = value("entryPrice");
@@ -900,11 +1015,22 @@ export default function useJournal() {
           if (saved) { Object.assign(saved, items[0], { updatedAt: stamp() }); savedTrades.push(saved); }
           $("#form-status").textContent = "计划已更新，原有操作流水保留。";
         } else {
+          const alreadyEntered = entryStage === "after";
           for (const item of items) {
-            const saved = { ...item, id: id(), createdAt: stamp(), status: "planned", actions: [], review: "" };
+            const saved = { ...item, id: id(), createdAt: stamp(), status: alreadyEntered ? "open" : "planned", actions: [], review: "" };
+            if (alreadyEntered) saved.actions.push({
+              id: id(), at: stamp(), type: "entry",
+              note: `先下单后补记。情绪：${item.psychology.emotion || "未记录"}；${item.psychology.skipped || "未填写跳过项"}`,
+              pnl: null,
+            });
             trades.unshift(saved); savedTrades.push(saved);
           }
-          $("#form-status").textContent = `已保存 ${savedTrades.length} 条独立交易计划。`;
+          const gatesPassed = Object.values(gates).every(Boolean);
+          $("#form-status").textContent = alreadyEntered
+            ? `已保存 ${savedTrades.length} 条持仓记录，并标记为下单后补记。`
+            : gatesPassed
+              ? `已保存 ${savedTrades.length} 条独立交易计划；4 项事前检查全部通过。`
+              : `已保存 ${savedTrades.length} 条待调整计划。事前检查未全部通过，请勿按当前计划执行。`;
         }
         if (persist()) {
           render();
@@ -935,6 +1061,12 @@ export default function useJournal() {
         const t = trades.find((x) => x.id === card.dataset.id);
         if (!t) return;
         if (btn.dataset.action === "edit") startEdit(t);
+        if (btn.dataset.action === "edit-event") {
+          const action = t.actions.find((item) => item.id === btn.dataset.eventId);
+          const row = btn.closest(".event");
+          if (action && row) row.innerHTML = editEventMarkup(action);
+        }
+        if (btn.dataset.action === "cancel-event-edit") render();
         if (
           btn.dataset.action === "delete" &&
           confirm(`删除 ${t.asset} 的整笔记录及其操作流水？此操作无法撤销。`)
@@ -970,6 +1102,32 @@ export default function useJournal() {
         }
       });
       document.addEventListener("submit", (e) => {
+        const editForm = e.target.closest("[data-event-edit]");
+        if (editForm) {
+          e.preventDefault();
+          const card = editForm.closest("[data-id]");
+          const t = trades.find((x) => x.id === card?.dataset.id);
+          const action = t?.actions.find((item) => item.id === editForm.dataset.eventId);
+          if (!t || !action) return;
+          const fd = new FormData(editForm);
+          const date = new Date(String(fd.get("at")));
+          if (Number.isNaN(date.getTime())) return;
+          action.at = date.toISOString();
+          action.type = String(fd.get("type"));
+          action.note = String(fd.get("note")).trim();
+          const rawPnl = String(fd.get("pnl")).trim();
+          action.pnl = rawPnl === "" ? null : Number(rawPnl);
+          t.status = statusFromActions(t);
+          t.updatedAt = stamp();
+          if (persist()) {
+            render();
+            if (cloudUser)
+              cloudUpdateAction(t, action)
+                .then(() => cloudMessage("操作流水已修改并同步到云端。"))
+                .catch(cloudReport);
+          }
+          return;
+        }
         const form = e.target.closest("[data-action-form]");
         if (!form) return;
         e.preventDefault();
