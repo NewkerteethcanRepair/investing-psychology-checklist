@@ -1,0 +1,67 @@
+<template>
+  <section
+    class="panel cloud-panel"
+    aria-label="云端同步"
+  >
+    <div>
+      <h2>CloudBase 云端同步</h2>
+      <p
+        id="cloud-status"
+        aria-live="polite"
+      >
+        尚未登录。登录后，交易和后续流水会同步到云端。
+      </p>
+    </div>
+    <div
+      id="cloud-login-controls"
+      class="cloud-actions"
+    >
+      <input
+        id="cloud-user"
+        autocomplete="username"
+        placeholder="用户名或邮箱"
+      ><input
+        id="cloud-password"
+        type="password"
+        autocomplete="current-password"
+        placeholder="密码"
+      ><input
+        id="cloud-otp"
+        class="hidden"
+        inputmode="numeric"
+        autocomplete="one-time-code"
+        placeholder="邮箱验证码"
+      ><button
+        id="cloud-login"
+        class="primary"
+        type="button"
+      >
+        登录并同步
+      </button><button
+        id="cloud-register"
+        class="secondary"
+        type="button"
+      >
+        注册新账号
+      </button>
+    </div>
+    <div
+      id="cloud-user-controls"
+      class="cloud-actions hidden"
+    >
+      <button
+        id="cloud-import-local"
+        class="secondary"
+        type="button"
+      >
+        导入本机记录到云端
+      </button><button
+        id="cloud-logout"
+        class="secondary"
+        type="button"
+      >
+        退出云端登录
+      </button>
+    </div>
+  </section>
+</template>
