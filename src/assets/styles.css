@@ -522,6 +522,8 @@ header {
   font-size: 12px;
   padding: 8px 10px;
 }
+.status-control { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 11px; font-weight: 700; }
+.status-control select { max-width: 120px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); }
 .trade-details {
   border-top: 1px solid var(--line);
   margin-top: 14px;
@@ -561,7 +563,7 @@ header {
 }
 .action-form {
   display: grid;
-  grid-template-columns: 1fr 1fr 120px auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   align-items: end;
   padding: 12px;
@@ -584,6 +586,7 @@ header {
   background: white;
   color: var(--ink);
 }
+.action-form .wide { grid-column: 1 / -1; }
 .action-form textarea {
   min-height: 38px;
   resize: vertical;
@@ -645,6 +648,11 @@ header {
 .hidden {
   display: none !important;
 }
+.edit-modal { position: fixed; inset: 0; z-index: 1000; overflow-y: auto; padding: 16px; background: rgb(25 35 29 / 58%); }
+.edit-modal-dialog { width: min(980px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; margin: 0 auto; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper, #fff); box-shadow: 0 20px 70px rgb(0 0 0 / 24%); }
+.edit-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.edit-modal-head h2 { margin: 0; font-size: 18px; }
+.edit-modal-dialog .form-panel { margin: 0; }
 .file-input {
   display: none;
 }

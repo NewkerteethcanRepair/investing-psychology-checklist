@@ -16,7 +16,7 @@
         class="quiet hidden"
         native-type="button"
       >
-        取消编辑
+        取消编辑并关闭弹框
       </el-button>
     </div>
     <div id="form-mode-notice" class="form-mode-notice" role="status">

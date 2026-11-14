@@ -339,7 +339,7 @@ export default function useJournal() {
               id: a.id,
               at: a.occurred_at,
               type: a.action_type,
-              note: a.note || "",
+              ...decodeActionNote(a.note || ""),
               pnl: a.realized_pnl == null ? null : Number(a.realized_pnl),
             })),
         };
@@ -383,7 +383,7 @@ export default function useJournal() {
             id: a.id,
             trade_id: t.id,
             action_type: a.type,
-            note: a.note || "",
+            note: encodeActionNote(a),
             realized_pnl: a.pnl,
             occurred_at: a.at,
           }),
@@ -400,7 +400,7 @@ export default function useJournal() {
         requireCloud(
           await cloudDb.from("trade_actions").update({
             action_type: a.type,
-            note: a.note || "",
+            note: encodeActionNote(a),
             realized_pnl: a.pnl,
             occurred_at: a.at,
           }).eq("id", a.id),
@@ -626,6 +626,23 @@ export default function useJournal() {
           0,
         );
       }
+      const ACTION_DATA_MARKER = "\n<!--trade-data:";
+      function encodeActionNote(action) {
+        const data = { size: action.size ?? "", price: action.price ?? "", unrealizedPnl: action.unrealizedPnl ?? null };
+        return `${action.note || ""}${ACTION_DATA_MARKER}${encodeURIComponent(JSON.stringify(data))}-->`;
+      }
+      function decodeActionNote(note = "") {
+        const markerIndex = note.lastIndexOf(ACTION_DATA_MARKER);
+        if (markerIndex < 0) return { note, size: "", price: "", unrealizedPnl: null };
+        try {
+          const data = JSON.parse(decodeURIComponent(note.slice(markerIndex + ACTION_DATA_MARKER.length, -3)));
+          return { note: note.slice(0, markerIndex), size: data.size || "", price: data.price || "", unrealizedPnl: data.unrealizedPnl == null ? null : Number(data.unrealizedPnl) };
+        } catch { return { note, size: "", price: "", unrealizedPnl: null }; }
+      }
+      function latestUnrealizedPnl(t) {
+        return [...(t.actions || [])].filter((action) => action.type === "mark" && action.unrealizedPnl != null)
+          .sort((a, b) => b.at.localeCompare(a.at))[0]?.unrealizedPnl ?? null;
+      }
       function statusLabel(s) {
         return (
           {
@@ -649,6 +666,7 @@ export default function useJournal() {
             reassess: "重新评估",
             cancel: "取消计划",
             note: "备注",
+            mark: "浮动盈亏更新",
           }[a] || a
         );
       }
@@ -703,6 +721,7 @@ export default function useJournal() {
         list.innerHTML = sorted
           .map((t) => {
             const pnl = pnlOf(t);
+            const unrealizedPnl = latestUnrealizedPnl(t);
             const actions = [...(t.actions || [])].sort((a, b) =>
               b.at.localeCompare(a.at),
             );
@@ -734,7 +753,7 @@ export default function useJournal() {
               pnl > 0 ? "positive" : pnl < 0 ? "negative" : ""
             }">${money(
               pnl,
-            )}</div></div><div><div class="metric-label">累计亏损</div><div class="pnl negative">${money(
+            )}</div></div>${unrealizedPnl == null ? "" : `<div><div class="metric-label">最新浮动盈亏</div><div class="pnl ${unrealizedPnl > 0 ? "positive" : unrealizedPnl < 0 ? "negative" : ""}">${money(unrealizedPnl)}</div></div>`}<div><div class="metric-label">累计亏损</div><div class="pnl negative">${money(
               (t.actions || []).reduce(
                 (s, a) => s + Math.max(0, -(Number(a.pnl) || 0)),
                 0,
@@ -743,7 +762,7 @@ export default function useJournal() {
           <div class="trade-meta">${tags
             .map((x) => `<span class="tag">${esc(x)}</span>`)
             .join("")}</div>
-          <div class="trade-controls"><button class="secondary" data-action="edit" type="button">编辑计划</button><button class="danger" data-action="delete" type="button">删除记录</button></div>
+          <div class="trade-controls"><label class="status-control">当前状态<select data-status-for="${esc(t.id)}" aria-label="修改${esc(t.asset || "该记录")}状态"><option value="planned" ${t.status === "planned" ? "selected" : ""}>计划中</option><option value="open" ${t.status === "open" ? "selected" : ""}>持仓中</option><option value="closed" ${t.status === "closed" ? "selected" : ""}>已结束</option><option value="cancelled" ${t.status === "cancelled" ? "selected" : ""}>已取消</option></select></label><button class="secondary" data-action="edit" type="button">编辑计划</button><button class="danger" data-action="delete" type="button">删除记录</button></div>
           <details class="trade-details"><summary>计划详情与操作流水</summary>
             <div class="detail-grid">
               ${detail("交易理由", t.thesis)}${detail(
@@ -758,14 +777,15 @@ export default function useJournal() {
             )}${t.migrationNote ? detail("迁移提醒", t.migrationNote) : ""}
             </div>${t.psychology?.stage === "before" && t.psychology?.gates && !Object.values(t.psychology.gates).every(Boolean) ? '<div class="gate-block-notice">事前检查未全部通过 · 请调整后再考虑执行</div>' : ""}
             ${
-              t.status === "closed" || t.status === "cancelled"
-                ? ""
-                : `<h4 class="action-title">追加后续操作</h4><form class="action-form" data-action-form="${esc(
+              `<h4 class="action-title">追加后续操作</h4>${t.status === "closed" || t.status === "cancelled" ? '<p class="event-note">这条记录已结束 / 取消；补录“执行进场”或“加仓”会重新标记为持仓中。</p>' : ""}<form class="action-form" data-action-form="${esc(
                     t.id,
                   )}">
-              <div><label>操作类型</label><select name="type"><option value="entry">执行进场</option><option value="add">加仓</option><option value="reduce">减仓</option><option value="stop">调整止损</option><option value="take">部分止盈</option><option value="exit">完全退出</option><option value="stopped">止损退出</option><option value="reassess">重新评估</option><option value="cancel">取消计划</option><option value="note">备注</option></select></div>
+              <div><label>操作类型</label><select name="type"><option value="entry">执行进场</option><option value="add">加仓</option><option value="reduce">减仓</option><option value="stop">调整止损</option><option value="take">部分止盈</option><option value="exit">完全退出</option><option value="stopped">止损退出</option><option value="mark">浮动盈亏更新</option><option value="reassess">重新评估</option><option value="cancel">取消计划</option><option value="note">备注</option></select></div>
+              <div><label>本次数量 / 金额（可空）</label><input name="size" placeholder="例如 0.2 BTC 或 500 USD"></div>
+              <div><label>成交 / 观察价格（可空）</label><input name="price" inputmode="decimal" placeholder="例如 68000"></div>
               <div class="wide"><label>操作说明</label><textarea name="note" placeholder="发生了什么？为什么这样处理？" required></textarea></div>
-              <div><label>本次已实现盈亏 USD（可空）</label><input name="pnl" type="number" step="0.01" placeholder="亏损填负数"></div><button class="primary" type="submit">追加记录</button>
+              <div><label>本次已实现盈亏 USD（浮动盈亏更新请留空）</label><input name="pnl" type="number" step="0.01" placeholder="亏损填负数"></div>
+              <div><label>当前浮动盈亏 USD（仅“浮动盈亏更新”填写）</label><input name="unrealizedPnl" type="number" step="0.01" placeholder="亏损填负数"></div><button class="primary" type="submit">追加记录</button>
             </form>`
             }
             <div class="timeline">${
@@ -781,14 +801,14 @@ export default function useJournal() {
                           a.note
                             ? `<div class="event-note">${esc(a.note)}</div>`
                             : ""
-                        }</div><div class="event-pnl ${
-                          Number(a.pnl) > 0
+                        }${a.size || a.price ? `<div class="event-note">${a.size ? `数量 / 金额：${esc(a.size)} ` : ""}${a.price ? `· 价格：${esc(a.price)}` : ""}</div>` : ""}</div><div class="event-pnl ${
+                          Number(a.type === "mark" ? a.unrealizedPnl : a.pnl) > 0
                             ? "positive"
-                            : Number(a.pnl) < 0
+                            : Number(a.type === "mark" ? a.unrealizedPnl : a.pnl) < 0
                             ? "negative"
                             : ""
                         }">${
-                          a.pnl == null || a.pnl === "" ? "" : money(a.pnl)
+                          a.type === "mark" && a.unrealizedPnl != null ? `浮动 ${money(a.unrealizedPnl)}` : a.pnl == null || a.pnl === "" ? "" : money(a.pnl)
                         } <button class="event-edit" data-action="edit-event" data-event-id="${esc(
                           a.id,
                         )}" type="button" title="编辑这条操作">编辑</button><button class="event-remove" data-action="remove-event" data-event-id="${esc(
@@ -842,27 +862,17 @@ export default function useJournal() {
           .toISOString().slice(0, 16);
       }
       function editEventMarkup(action) {
-        const types = ["entry", "add", "reduce", "stop", "take", "exit", "stopped", "reassess", "cancel", "note"];
+        const types = ["entry", "add", "reduce", "stop", "take", "exit", "stopped", "mark", "reassess", "cancel", "note"];
         return `<form class="event-edit-form" data-event-edit data-event-id="${esc(action.id)}">
           <label>发生时间<input name="at" type="datetime-local" required value="${localDateTimeValue(action.at)}"></label>
           <label>操作类型<select name="type">${types.map((type) => `<option value="${type}" ${action.type === type ? "selected" : ""}>${actionLabel(type)}</option>`).join("")}</select></label>
           <label class="wide">操作说明<textarea name="note" required>${esc(action.note || "")}</textarea></label>
+          <label>本次数量 / 金额<input name="size" value="${esc(action.size || "")}"></label>
+          <label>成交 / 观察价格<input name="price" value="${esc(action.price || "")}"></label>
           <label>已实现盈亏 USD<input name="pnl" type="number" step="0.01" value="${action.pnl == null ? "" : esc(action.pnl)}" placeholder="亏损填负数"></label>
+          <label>当前浮动盈亏 USD<input name="unrealizedPnl" type="number" step="0.01" value="${action.unrealizedPnl == null ? "" : esc(action.unrealizedPnl)}" placeholder="仅浮动盈亏更新填写"></label>
           <div class="event-edit-actions"><button class="primary" type="submit">保存流水修改</button><button class="secondary" type="button" data-action="cancel-event-edit">取消</button></div>
         </form>`;
-      }
-      function statusFromActions(t) {
-        const statefulActions = (t.actions || []).filter((action) =>
-          ["entry", "add", "exit", "stopped", "cancel"].includes(action.type),
-        );
-        if (!statefulActions.length) return t.status;
-        let status = "planned";
-        [...statefulActions].sort((a, b) => a.at.localeCompare(b.at)).forEach((action) => {
-          if (action.type === "entry" || action.type === "add") status = "open";
-          if (action.type === "exit" || action.type === "stopped") status = "closed";
-          if (action.type === "cancel") status = "cancelled";
-        });
-        return status;
       }
       function setTab(id) {
         $$(".tab").forEach((b) =>
@@ -892,8 +902,13 @@ export default function useJournal() {
       }
       $("#add-position").addEventListener("click", () => addPosition());
       function resetForm() {
+        const form = $("#trade-form");
+        if (form && $("#trade-form-home") && form.parentElement !== $("#trade-form-home"))
+          $("#trade-form-home").append(form);
+        $("#edit-modal").classList.add("hidden");
+        $("#edit-modal").setAttribute("aria-hidden", "true");
         editingId = null;
-        $("#trade-form").reset();
+        form.reset();
         $("#form-errors").classList.add("hidden");
         $$(".field-invalid, .check-invalid").forEach((el) => el.classList.remove("field-invalid", "check-invalid"));
         $("#trade-form").classList.remove("editing-mode");
@@ -908,6 +923,9 @@ export default function useJournal() {
       }
       function startEdit(t) {
         editingId = t.id;
+        $("#edit-modal-content").append($("#trade-form"));
+        $("#edit-modal").classList.remove("hidden");
+        $("#edit-modal").setAttribute("aria-hidden", "false");
         $("#trade-form").classList.add("editing-mode");
         const f = $("#trade-form");
         f.date.value = t.date || "";
@@ -932,8 +950,7 @@ export default function useJournal() {
         $("#form-mode-description").textContent = `正在修改「${t.asset || "未命名标的"}」的已有记录。保存只会更新这条记录，原有操作流水会保留。`;
         $("#save-trade").textContent = "保存修改到这条记录";
         $("#cancel-edit").classList.remove("hidden");
-        setTab("new-view");
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        $("#close-edit-modal").focus();
       }
       $("#trade-form").addEventListener("submit", (e) => {
         e.preventDefault();
@@ -1043,6 +1060,13 @@ export default function useJournal() {
         }
       });
       $("#cancel-edit").addEventListener("click", resetForm);
+      $("#close-edit-modal").addEventListener("click", resetForm);
+      $("#edit-modal").addEventListener("click", (event) => {
+        if (event.target.id === "edit-modal") resetForm();
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && editingId) resetForm();
+      });
       $("#trade-form").addEventListener("reset", () =>
         setTimeout(() => {
           if (!editingId) $("#trade-date").value = today();
@@ -1101,6 +1125,24 @@ export default function useJournal() {
               .catch(cloudReport);
         }
       });
+      document.addEventListener("change", (e) => {
+        const statusSelect = e.target.closest("[data-status-for]");
+        if (!statusSelect) return;
+        const trade = trades.find((item) => item.id === statusSelect.dataset.statusFor);
+        if (!trade) return;
+        trade.status = statusSelect.value;
+        trade.updatedAt = stamp();
+        if (persist()) {
+          render();
+          if (cloudUser)
+            cloudDb.from("trade_records")
+              .update({ status: trade.status, updated_at: trade.updatedAt })
+              .eq("id", trade.id)
+              .then(requireCloud)
+              .then(() => cloudMessage("记录状态已修改并同步到云端。"))
+              .catch(cloudReport);
+        }
+      });
       document.addEventListener("submit", (e) => {
         const editForm = e.target.closest("[data-event-edit]");
         if (editForm) {
@@ -1115,9 +1157,12 @@ export default function useJournal() {
           action.at = date.toISOString();
           action.type = String(fd.get("type"));
           action.note = String(fd.get("note")).trim();
+          action.size = String(fd.get("size") || "").trim();
+          action.price = String(fd.get("price") || "").trim();
           const rawPnl = String(fd.get("pnl")).trim();
-          action.pnl = rawPnl === "" ? null : Number(rawPnl);
-          t.status = statusFromActions(t);
+          action.pnl = action.type === "mark" || rawPnl === "" ? null : Number(rawPnl);
+          const rawUnrealized = String(fd.get("unrealizedPnl")).trim();
+          action.unrealizedPnl = rawUnrealized === "" ? null : Number(rawUnrealized);
           t.updatedAt = stamp();
           if (persist()) {
             render();
@@ -1141,7 +1186,10 @@ export default function useJournal() {
           at: stamp(),
           type,
           note: String(fd.get("note")).trim(),
-          pnl: raw === "" ? null : Number(raw),
+          size: String(fd.get("size") || "").trim(),
+          price: String(fd.get("price") || "").trim(),
+          pnl: type === "mark" || raw === "" ? null : Number(raw),
+          unrealizedPnl: String(fd.get("unrealizedPnl")).trim() === "" ? null : Number(fd.get("unrealizedPnl")),
         };
         t.actions.push(ev);
         t.updatedAt = stamp();

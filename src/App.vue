@@ -37,7 +37,7 @@
     </nav>
 
     <section id="new-view" class="view active">
-      <TradeEntryForm />
+      <div id="trade-form-home"><TradeEntryForm /></div>
       <div class="notice">
         未登录时记录保存在当前浏览器；登录后会同步到 CloudBase
         PostgreSQL，同一账号可在不同设备查看。注册账号需要邮箱验证码。页面代码公开，但交易记录保存在数据库，不会写入
@@ -46,6 +46,15 @@
     </section>
 
     <TradeHistory />
+    <div id="edit-modal" class="edit-modal hidden" aria-hidden="true">
+      <section class="edit-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+        <header class="edit-modal-head">
+          <h2 id="edit-modal-title">编辑交易计划</h2>
+          <button id="close-edit-modal" class="quiet" type="button" aria-label="放弃修改并关闭编辑弹框">关闭弹框</button>
+        </header>
+        <div id="edit-modal-content" />
+      </section>
+    </div>
     <footer class="privacy">
       这是个人记录工具，不会判断市场方向，也不构成投资建议。定期导出 JSON
       备份，避免浏览器数据被清理后丢失。
