@@ -281,7 +281,7 @@ header {
 .position-list { display: grid; gap: 10px; }
 .position-row {
   display: grid;
-  grid-template-columns: 1.1fr 1fr 1.2fr repeat(3, .9fr) 1fr auto;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 9px;
   align-items: end;
   padding: 12px;
@@ -289,6 +289,9 @@ header {
   border-radius: 11px;
   background: #f9faf6;
 }
+.plan-estimate { grid-column: 1 / -1; padding: 10px 11px; border-radius: 8px; background: #eef6ef; color: var(--green-dark); font-size: 12px; line-height: 1.5; }
+.plan-estimate.estimate-warning { background: #fdf6ec; color: #9b6427; }
+.plan-estimate.estimate-ready { background: #eef6ef; color: var(--green-dark); }
 .position-row label { min-width: 0; font-size: 11px; font-weight: 700; color: var(--muted); }
 .position-row input, .position-row select {
   width: 100%; min-width: 0; margin-top: 5px; padding: 9px 8px;
@@ -483,6 +486,10 @@ header {
   background: #fff4df;
   color: #795c26;
 }
+.record-type-badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+.record-type-badge.decision { background: #e8f1fb; color: #315e8a; }
+.record-type-badge.execution { background: #f1f2ec; color: #56645c; }
+.field small#urge-warning { color: #9b6427; font-weight: 700; }
 .trade-date {
   color: var(--muted);
   font-size: 12px;

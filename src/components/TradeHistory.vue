@@ -6,6 +6,11 @@
     <div class="history-head">
       <h2>历史记录</h2>
       <div class="filters">
+        <select id="record-type-filter" aria-label="记录类型">
+          <option value="decision">决策计划</option>
+          <option value="execution">OKX 执行历史</option>
+          <option value="all">全部记录</option>
+        </select>
         <input
           id="search"
           class="search"

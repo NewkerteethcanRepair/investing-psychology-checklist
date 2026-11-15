@@ -47,7 +47,7 @@
     </div>
     <div class="metric">
       <div class="metric-label">
-        持仓计划风险
+        未结束计划止损风险（USD / USDT）
       </div>
       <div
         id="open-risk"
@@ -56,7 +56,7 @@
         $0.00
       </div>
       <div class="metric-sub">
-        持仓中记录填写的最大风险合计
+        USD / USDT / USDC 计价合计；不含费用
       </div>
     </div>
   </section>

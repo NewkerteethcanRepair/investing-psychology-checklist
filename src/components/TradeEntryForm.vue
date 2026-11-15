@@ -62,7 +62,7 @@
     </section>
     <section class="form-section">
       <div class="section-head batch-heading">
-        <div><h3>每个品种单独填写</h3><p>方向、仓位、进场价、TP、SL 和风险都可分别设置。</p></div>
+        <div><h3>每个品种单独填写</h3><p>填数量、合约规格、进场、TP、SL 和风险上限；页面估算理论亏损、理论盈利与盈亏比。</p></div>
         <el-button
           id="add-position"
           class="secondary"
@@ -78,7 +78,7 @@
     </section>
     <section class="form-section">
       <h3>开仓前检查（4 项全通过才考虑执行）</h3>
-      <p class="psych-intro">任一项未确认或答“否”，先调整计划或减小仓位。记录仍可保存为“待调整”，不会被当成检查通过；这里不能替券商拦截订单。</p>
+      <p class="psych-intro">风险检查会核对理论到 SL 的亏损是否低于你填写的单笔上限；缺少计算数据或超出上限时，即使勾选也不会通过。记录可保存为“待调整”。</p>
       <div class="psychology gate-checks">
         <label class="check"><input name="gateSetup" type="checkbox"><span><strong>策略条件成立</strong>当前信号符合我预先定义的入场条件。</span></label>
         <label class="check"><input name="gateInvalidation" type="checkbox"><span><strong>知道何时认错</strong>失效条件 / 止损位已明确，不会临场往外挪。</span></label>
@@ -87,8 +87,12 @@
       </div>
     </section>
     <section class="form-section">
-      <h3>下单当下的心理检查</h3>
-      <p class="psych-intro">不用证明自己理性，只记录当时的状态。勾选代表“这件事确实发生/我确实做了”。</p>
+      <h3>下单前的冲动检查</h3>
+      <p class="psych-intro">记录此刻有多想马上下单。7–10 分时建议先离开盘口 10 分钟，再重新判断。</p>
+      <div class="form-grid">
+        <label class="field"><span>现在有多想下这笔单？</span><select name="urgeScore"><option value="">选择 0–10 分</option><option value="0">0 · 没有冲动</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10 · 非常强</option></select><small id="urge-warning" class="hidden">先暂停 10 分钟；暂停后仍想做，再重新检查计划。</small></label>
+      </div>
+      <p class="psych-intro">不用证明自己理性，只记录实际状态。勾选代表“这件事确实发生/我确实做了”。</p>
       <div class="psychology">
         <label class="check"><input name="urgency" type="checkbox"><span><strong>害怕错过</strong>我因为怕行情跑掉而加快了决定吗？</span></label>
         <label class="check"><input name="impulse" type="checkbox"><span><strong>先行动后思考</strong>我是否已经下单，才开始想仓位、止损或理由？</span></label>
