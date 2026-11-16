@@ -1,0 +1,10 @@
+npm WARN config global `--global`, `--local` are deprecated. Use `--location=global` instead.
+
+> investing-psychology-checklist@1.0.0 build
+> vue-cli-service build
+
+All browser targets in the browserslist configuration have supported ES module.
+Therefore we don't build two separate bundles for differential loading.
+
+
+-  Building for production...
