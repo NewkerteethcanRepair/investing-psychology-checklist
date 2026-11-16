@@ -1,137 +1,67 @@
 <template>
-  <form
-    id="trade-form"
-    class="panel form-panel"
-    novalidate
-  >
+  <form id="trade-form" class="panel form-panel" novalidate>
     <div class="section-head">
-      <div>
-        <h2 id="form-title">
-          新建一笔交易
-        </h2>
-        <p>一次录入多个品种；保存后每个品种仍是一条独立记录。</p>
-      </div>
-      <el-button
-        id="cancel-edit"
-        class="quiet hidden"
-        native-type="button"
-      >
-        取消编辑并关闭弹框
-      </el-button>
+      <div><h2 id="form-title">记下此刻的自己</h2><p>先记动机、情绪和规则。平仓后再回来核对结果。</p></div>
+      <el-button id="cancel-edit" class="quiet hidden" native-type="button">取消编辑并关闭弹框</el-button>
     </div>
-    <div id="form-mode-notice" class="form-mode-notice" role="status">
-      <strong id="form-mode-title">新建模式</strong>
-      <span id="form-mode-description">提交后会创建一条新的交易记录。</span>
-    </div>
+    <div id="form-mode-notice" class="form-mode-notice" role="status"><strong id="form-mode-title">新建记录</strong><span id="form-mode-description">不需要写完整分析，先留下当时的真实想法。</span></div>
     <section class="form-section timing-section">
-      <h3>你现在处于哪个阶段？</h3>
       <div class="timing-options">
-        <label class="timing-option"><input name="entryStage" type="radio" value="before" checked><span><strong>还没下单</strong><small>先做一次短暂停顿，再决定是否执行。</small></span></label>
-        <label class="timing-option"><input name="entryStage" type="radio" value="after"><span><strong>已经下单，正在补记</strong><small>如实记录实际情况，不把事后理由写成事前计划。</small></span></label>
+        <label class="timing-option"><input name="entryStage" type="radio" value="before" checked><span><strong>下单前记录</strong><small>保留做决定时的状态。</small></span></label>
+        <label class="timing-option"><input name="entryStage" type="radio" value="after"><span><strong>已经下单，补记状态</strong><small>分析时可单独查看补记样本。</small></span></label>
+        <label id="unknown-stage-option" class="timing-option hidden"><input name="entryStage" type="radio" value="unknown"><span><strong>原记录时机不详</strong><small>保留未知状态，不推测当时何时记录。</small></span></label>
       </div>
     </section>
     <section class="form-section">
-      <h3>本批共用信息</h3>
+      <div class="section-head batch-heading"><div><h3>01 · 这笔交易</h3><p>每笔单独记录，避免把不同心理混在一起。</p></div><el-button id="add-position" class="secondary" native-type="button">＋ 同状态的其他品种</el-button></div>
+      <div class="form-grid"><label class="field"><span>交易日期</span><input id="trade-date" name="date" type="date" required></label></div>
+      <div id="position-list" class="position-list" />
+    </section>
+    <RuleDecisionCard />
+    <section class="form-section">
+      <h3 id="impulse-title">02 · 我现在为什么想做这笔单？</h3>
       <div class="form-grid">
-        <div class="field">
-          <label for="trade-date">交易日期 / 计划日期</label>
-          <input
-            id="trade-date"
-            name="date"
-            type="date"
-            required
-          >
-        </div>
-        <div class="field">
-          <label for="timeframe">观察周期</label>
-          <input
-            id="timeframe"
-            name="timeframe"
-            placeholder="例如 1h 入场，日线假设"
-          >
-        </div>
-        <div class="field full">
-          <label for="thesis">交易理由 / 假设</label>
-          <textarea
-            id="thesis"
-            name="thesis"
-            placeholder="为什么考虑这批交易？什么证据会推翻判断？"
-          />
-        </div>
+        <label class="field"><span>最主要的下单动机 *</span><select name="decisionBasis"><option value="">请选择真实原因</option><option value="rules">规则信号：满足了预设条件</option><option value="feeling">纯靠感觉：觉得会涨 / 会跌</option><option value="impulse">临时冲动：突然就想下单</option><option value="fomo">害怕错过：怕行情跑了</option><option value="revenge">想追回亏损：想扳回一笔</option><option value="other">其他原因</option><option value="unknown">记不清了</option></select></label>
+        <label class="field"><span>当时最明显的情绪 *</span><select name="emotion"><option value="">请选择</option><option>平静</option><option>兴奋 / 急迫</option><option>焦虑 / 害怕错过</option><option>害怕亏损</option><option>懊恼 / 想追回</option><option>过度自信</option><option>疲惫 / 分心</option><option>记不清了</option></select></label>
+        <label id="urge-field" class="field"><span>有多想立刻下单？（事前必填）</span><select name="urgeScore"><option value="">0–10 分；补记时回忆不清可留空</option><option value="0">0 · 没有冲动</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10 · 非常强</option></select><small id="urge-warning" class="hidden">冲动较强。记下触发点，留待以后比较。</small></label>
+        <label class="field"><span>是什么触发了我？（选填）</span><input name="trigger" placeholder="例如：刚止损、突然拉升、看到别人赚钱"></label>
+        <label class="field full"><span>留一句当时的原话（选填）</span><textarea name="stateNote" placeholder="例如：没什么信号，但我觉得这次一定会涨，忍不住想买。" /></label>
       </div>
+      <details class="optional-section"><summary>还有其他心理信号？（可多选）</summary><div class="psychology">
+        <label class="check"><input name="urgency" type="checkbox"><span>害怕错过</span></label>
+        <label class="check"><input name="impulse" type="checkbox"><span>先行动后思考</span></label>
+        <label class="check"><input name="relief" type="checkbox"><span>想缓解情绪 / 证明自己</span></label>
+        <label class="check"><input name="ruleBreak" type="checkbox"><span>已经偏离规则</span></label>
+      </div></details>
     </section>
     <section class="form-section">
-      <div class="section-head batch-heading">
-        <div><h3>每个品种单独填写</h3><p>填数量、合约规格、进场、TP、SL 和风险上限；页面估算理论亏损、理论盈利与盈亏比。</p></div>
-        <el-button
-          id="add-position"
-          class="secondary"
-          native-type="button"
-        >
-          ＋ 添加品种
-        </el-button>
-      </div>
-      <div
-        id="position-list"
-        class="position-list"
-      />
-    </section>
-    <section class="form-section">
-      <h3>开仓前检查（4 项全通过才考虑执行）</h3>
-      <p class="psych-intro">风险检查会核对理论到 SL 的亏损是否低于你填写的单笔上限；缺少计算数据或超出上限时，即使勾选也不会通过。记录可保存为“待调整”。</p>
-      <div class="psychology gate-checks">
-        <label class="check"><input name="gateSetup" type="checkbox"><span><strong>策略条件成立</strong>当前信号符合我预先定义的入场条件。</span></label>
-        <label class="check"><input name="gateInvalidation" type="checkbox"><span><strong>知道何时认错</strong>失效条件 / 止损位已明确，不会临场往外挪。</span></label>
-        <label class="check"><input name="gateRisk" type="checkbox"><span><strong>风险算得清</strong>仓位与最大亏损已算好，在我的风险上限内。</span></label>
-        <label class="check"><input name="gateAccept" type="checkbox"><span><strong>能接受这笔止损</strong>如果按计划止损，我能平静接受；否则先减半仓位再确认。</span></label>
-      </div>
-    </section>
-    <section class="form-section">
-      <h3>下单前的冲动检查</h3>
-      <p class="psych-intro">记录此刻有多想马上下单。7–10 分时建议先离开盘口 10 分钟，再重新判断。</p>
+      <h3>03 · 此刻的规则情况</h3>
       <div class="form-grid">
-        <label class="field"><span>现在有多想下这笔单？</span><select name="urgeScore"><option value="">选择 0–10 分</option><option value="0">0 · 没有冲动</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10 · 非常强</option></select><small id="urge-warning" class="hidden">先暂停 10 分钟；暂停后仍想做，再重新检查计划。</small></label>
-      </div>
-      <p class="psych-intro">不用证明自己理性，只记录实际状态。勾选代表“这件事确实发生/我确实做了”。</p>
-      <div class="psychology">
-        <label class="check"><input name="urgency" type="checkbox"><span><strong>害怕错过</strong>我因为怕行情跑掉而加快了决定吗？</span></label>
-        <label class="check"><input name="impulse" type="checkbox"><span><strong>先行动后思考</strong>我是否已经下单，才开始想仓位、止损或理由？</span></label>
-        <label class="check"><input name="relief" type="checkbox"><span><strong>情绪驱动</strong>这笔单是在缓解焦虑、追回亏损或证明自己吗？</span></label>
-        <label class="check"><input name="ruleBreak" type="checkbox"><span><strong>偏离规则</strong>我是否跳过了自己原本设定的进场/风险规则？</span></label>
-      </div>
-      <div class="form-grid psych-followup">
-        <label class="field"><span>下单时的主要情绪</span><select name="emotion"><option value="">选择（可空）</option><option>平静</option><option>兴奋 / 急迫</option><option>焦虑 / 害怕错过</option><option>害怕亏损</option><option>懊恼 / 想追回</option><option>过度自信</option><option>疲惫 / 分心</option></select></label>
-        <label class="field"><span>这次最明显的触发点</span><input name="trigger" placeholder="例如：突然拉升、刚止损、看到别人晒单"></label>
-        <label class="field full"><span>如果已经开单：我跳过了什么？</span><textarea name="skipped" placeholder="例如：没算最大亏损，没等确认，先买了再找理由；没有偏离可留空"></textarea></label>
+        <label class="field"><span>这次入场是否符合自己的规则？ *</span><select name="entryDiscipline"><option value="">请选择</option><option value="followed">完全符合</option><option value="partial">有部分偏离</option><option value="broken">明知不符合，仍然想做 / 已经做了</option><option value="no-rules">我没有明确规则</option><option value="unknown">暂时无法判断</option></select><small>这里只记录入场判断；整笔交易是否守规则，在结束时单独核对。</small></label>
+        <label class="field"><span>对照哪条规则？（选填）</span><input name="ruleReference" placeholder="例如：等回踩确认；单笔风险不超过 1%"></label>
+        <label class="field full"><span>我跳过 / 改变了什么？（选填）</span><textarea name="skipped" placeholder="例如：没等确认就追了；临时加大仓位；没有偏离则留空。" /></label>
       </div>
     </section>
-    <div class="form-actions">
-      <el-button
-        id="save-trade"
-        class="primary"
-        type="primary"
-        native-type="submit"
-      >
-        创建新交易记录
-      </el-button>
-      <el-button
-        class="secondary"
-        type="default"
-        native-type="reset"
-      >
-        清空表单
-      </el-button>
-    </div>
-    <div id="form-errors" class="el-alert el-alert--error is-light validation-errors hidden" role="alert">
-      <div class="el-alert__content">
-        <span class="el-alert__title">请先补全以下内容</span>
-        <ul id="form-error-list" class="validation-error-list" />
+    <details class="optional-section form-section">
+      <summary>补充交易假设与开仓检查（选填）</summary>
+      <div class="form-grid">
+        <label class="field"><span>观察周期</span><input id="timeframe" name="timeframe" placeholder="例如 1h"></label>
+        <label class="field full"><span>交易理由 / 假设</span><textarea id="thesis" name="thesis" placeholder="如果需要，再补充策略依据。" /></label>
       </div>
-    </div>
-    <p
-      id="form-status"
-      class="status"
-      aria-live="polite"
-    />
+      <section id="gate-section" class="form-section"><h3>开仓检查（可选）</h3><p id="urge-intro" class="psych-intro">用于保留额外的计划信息，不代替实际执行复盘。</p><div class="psychology gate-checks">
+        <label class="check"><input name="gateSetup" type="checkbox"><span>策略条件成立</span></label>
+        <label class="check"><input name="gateInvalidation" type="checkbox"><span>失效 / 止损条件明确</span></label>
+        <label class="check"><input name="gateRisk" type="checkbox"><span>仓位与风险已核算</span></label>
+        <label class="check"><input name="gateAccept" type="checkbox"><span>能接受计划止损</span></label>
+      </div></section>
+    </details>
+    <div class="form-actions"><el-button id="save-trade" class="primary" type="primary" native-type="submit">保存当时状态</el-button><el-button class="secondary" native-type="reset">清空表单</el-button></div>
+    <div id="form-errors" class="el-alert el-alert--error is-light validation-errors hidden" role="alert"><div class="el-alert__content"><span class="el-alert__title">请先补全以下内容</span><ul id="form-error-list" class="validation-error-list" /></div></div>
+    <p id="form-status" class="status" aria-live="polite" />
   </form>
 </template>
+
+<script>
+import RuleDecisionCard from "./RuleDecisionCard.vue";
+export default { components: { RuleDecisionCard } };
+</script>

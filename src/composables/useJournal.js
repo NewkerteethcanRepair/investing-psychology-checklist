@@ -1,4 +1,6 @@
 import { onMounted } from "vue";
+import { initDecisionCards } from "./decisionCards.mjs";
+import { analyzeTrades, BASES, DISCIPLINES, basisOf, disciplineOf, tradeResult } from "./journalAnalysis.mjs";
 
 export default function useJournal() {
   onMounted(() => {
@@ -308,7 +310,7 @@ export default function useJournal() {
           position_size: t.size || "",
           planned_max_loss: t.maxRisk,
           exit_plan: t.exitPlan || "",
-          status: t.status || "planned",
+          status: t.status === "skipped" ? "cancelled" : t.status || "planned",
           psychology: t.psychology || {},
           review: t.review || "",
           updated_at: t.updatedAt || stamp(),
@@ -328,7 +330,7 @@ export default function useJournal() {
           maxRisk:
             r.planned_max_loss == null ? null : Number(r.planned_max_loss),
           exitPlan: r.exit_plan || "",
-          status: r.status || "planned",
+          status: r.status === "cancelled" && r.psychology?.opportunitySkipped ? "skipped" : r.status || "planned",
           psychology: r.psychology || {},
           review: r.review || "",
           createdAt: r.created_at || stamp(),
@@ -391,7 +393,7 @@ export default function useJournal() {
         requireCloud(
           await cloudDb
             .from("trade_records")
-            .update({ status: t.status, updated_at: t.updatedAt })
+            .update({ status: t.status, psychology: t.psychology || {}, updated_at: t.updatedAt })
             .eq("id", t.id),
         );
       }
@@ -407,7 +409,7 @@ export default function useJournal() {
         );
         requireCloud(
           await cloudDb.from("trade_records")
-            .update({ status: t.status, updated_at: t.updatedAt })
+            .update({ status: t.status, psychology: t.psychology || {}, updated_at: t.updatedAt })
             .eq("id", t.id),
         );
       }
@@ -550,6 +552,8 @@ export default function useJournal() {
         }
       }
 
+      const decisionCards = initDecisionCards({ $, esc, id, stamp, getTrades: () => trades });
+
       function load() {
         try {
           const current = JSON.parse(localStorage.getItem(STORE) || "null");
@@ -620,12 +624,6 @@ export default function useJournal() {
           currency: "USD",
         }).format(Number(n) || 0);
       }
-      function pnlOf(t) {
-        return (t.actions || []).reduce(
-          (s, a) => s + (Number.isFinite(Number(a.pnl)) ? Number(a.pnl) : 0),
-          0,
-        );
-      }
       const ACTION_DATA_MARKER = "\n<!--trade-data:";
       function encodeActionNote(action) {
         const data = { size: action.size ?? "", price: action.price ?? "", unrealizedPnl: action.unrealizedPnl ?? null };
@@ -650,6 +648,7 @@ export default function useJournal() {
             open: "持仓中",
             closed: "已结束",
             cancelled: "已取消",
+            skipped: "已跳过机会",
           }[s] || "计划中"
         );
       }
@@ -670,40 +669,65 @@ export default function useJournal() {
           }[a] || a
         );
       }
+      const percent = (value) => value == null ? "—" : `${(value * 100).toFixed(1)}%`;
+      function amount(value, currency) {
+        return `${Number(value).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 8 })} ${esc(currency)}`;
+      }
+      function currencyTotals(currencies, field = "net", average = false) {
+        const values = Object.entries(currencies).sort(([a], [b]) => a.localeCompare(b));
+        return values.length ? values.map(([currency, values]) => `<span class="currency-total ${values[field] < 0 ? "negative" : values[field] > 0 ? "positive" : ""}">${amount(average ? values[field] / values.count : values[field], currency)}</span>`).join("") : "—";
+      }
+      function needsReview(t) {
+        const opportunity = decisionCards.opportunityResult(t);
+        if (opportunity && ["closed", "skipped"].includes(t.status) && opportunity.eligible && !opportunity.paired) return true;
+        return t.status === "closed" && (!tradeResult(t).known || disciplineOf(t) === "unknown");
+      }
+      function invalidateReview(t, type, pnl = null) {
+        if (t.psychology?.result && (!["note", "mark", "reassess"].includes(type) || (pnl != null && pnl !== "")))
+          t.psychology.result.stale = true;
+      }
       function renderSummary() {
-        const active = trades.filter(
-          (t) => !isExecutionRecord(t) && (t.status === "planned" || t.status === "open"),
-        ).length;
-        const net = trades.reduce((s, t) => s + pnlOf(t), 0);
-        const losses = trades.reduce(
-          (s, t) =>
-            s +
-            (t.actions || []).reduce(
-              (a, e) => a + Math.max(0, -(Number(e.pnl) || 0)),
-              0,
-            ),
-          0,
-        );
-        const risk = trades
-          .filter((t) => !isExecutionRecord(t) && (t.status === "planned" || t.status === "open"))
-          .reduce((s, t) => {
-            const plan = t.psychology?.plan;
-            return ["USD", "USDT", "USDC"].includes(String(plan?.settlementCurrency || "").toUpperCase())
-              ? s + (Number(plan.theoreticalLoss) || 0)
-              : s;
-          }, 0);
-        $("#active-count").textContent = active;
-        const netEl = $("#net-pnl");
-        netEl.textContent = money(net);
-        netEl.className = `metric-value ${
-          net > 0 ? "positive" : net < 0 ? "negative" : ""
-        }`;
-        $("#loss-total").textContent = money(losses);
-        $("#open-risk").textContent = money(risk);
+        const all = analyzeTrades(trades);
+        $("#sample-count").textContent = all.count;
+        $("#review-count").textContent = trades.filter(needsReview).length;
+        $("#settled-pnl").innerHTML = currencyTotals(all.currencies);
+        const reviewed = all.sample.filter(t => t.status === "closed" && disciplineOf(t) !== "unknown");
+        const followed = reviewed.filter(t => disciplineOf(t) === "followed").length;
+        $("#discipline-rate").textContent = reviewed.length ? percent(followed / reviewed.length) : "—";
+        $("#discipline-scope").textContent = `完全守规则 ${followed} / 已结束且已核对 ${reviewed.length} 笔`;
         $("#history-count").textContent = trades.length;
+      }
+      function analysisRows(rows, total, includeShare = true) {
+        return rows.map(row => {
+          const lossShares = Object.entries(total.currencies).sort(([a], [b]) => a.localeCompare(b)).map(([currency, values]) =>
+            `<span class="currency-total">${values.loss ? percent((row.currencies[currency]?.loss || 0) / values.loss) : "—"} ${esc(currency)}</span>`).join("") || "—";
+          return `<tr><th scope="row">${esc(row.label)}${row.settled > 0 && row.settled < 20 ? '<small class="sample-warning">结果少于 20 笔，谨慎解读</small>' : ""}</th><td>${row.count}</td>${includeShare ? `<td><span class="share-bar" style="--share:${Math.round(row.share * 100)}%"></span>${percent(row.share)}</td>` : ""}<td>${row.settled} / ${row.pending}</td><td>${row.wins} / ${row.losses} / ${row.flats}</td><td>${percent(row.winRate)}</td><td>${currencyTotals(row.currencies)}</td>${includeShare ? `<td>${currencyTotals(row.currencies, "net", true)}</td><td>${lossShares}</td>` : ""}</tr>`;
+        }).join("");
+      }
+      function renderAnalysis() {
+        decisionCards.refresh();
+        const currencySelect = $("#analysis-currency");
+        const selected = currencySelect.value;
+        const currencies = [...new Set(trades.filter(t => (["open", "closed"].includes(t.status) || t.psychology?.decisionCard)).map(t => t.psychology?.decisionCard?.currency || tradeResult(t).currency))].sort();
+        currencySelect.innerHTML = '<option value="all">全部 · 分币种显示</option>' + currencies.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+        currencySelect.value = currencies.includes(selected) ? selected : "all";
+        const from = $("#analysis-from").value, to = $("#analysis-to").value;
+        if (from && to && from > to) {
+          $("#analysis-scope").textContent = "起始日期不能晚于结束日期。请调整筛选。";
+          ["analysis-metrics", "analysis-table", "discipline-table", "opportunity-table"].forEach(id => $("#" + id).replaceChildren());
+          $("#opportunity-scope").textContent = "请调整日期范围。";
+          return;
+        }
+        decisionCards.renderAnalysis({ from, to, stage: $("#analysis-stage").value, currency: currencySelect.value });
+        const stats = analyzeTrades(trades, { from, to, stage: $("#analysis-stage").value, currency: currencySelect.value, dimension: $("#analysis-dimension").value });
+        $("#analysis-scope").textContent = `当前 ${stats.count} 笔已执行交易；${stats.settled} 笔有最终结果，${stats.open} 笔持仓中，${stats.missingResult} 笔已结束但未填盈亏。下单后补记 ${stats.retrospective} 笔，时机不详 ${stats.unknownStage} 笔；动机缺失 ${stats.missingBasis} 笔，未核对最终执行 ${stats.count - stats.reviewed} 笔。`;
+        $("#analysis-metrics").innerHTML = `<div class="metric"><div class="metric-label">当前交易样本</div><div class="metric-value">${stats.count}</div><div class="metric-sub">不含未执行与已取消</div></div><div class="metric"><div class="metric-label">有最终结果</div><div class="metric-value">${stats.settled}</div><div class="metric-sub">盈利 ${stats.wins} / 亏损 ${stats.losses} / 持平 ${stats.flats}</div></div><div class="metric"><div class="metric-label">已结束胜率</div><div class="metric-value">${percent(stats.winRate)}</div><div class="metric-sub">盈利笔数 / 有结果的已结束笔数</div></div><div class="metric"><div class="metric-label">最终净盈亏</div><div class="metric-value compact-value">${currencyTotals(stats.currencies)}</div><div class="metric-sub">按整笔净额，分币种累计</div></div>`;
+        $("#analysis-table").innerHTML = stats.count ? `<table class="analysis-table"><caption>按所选维度比较交易占比和最终结果</caption><thead><tr><th scope="col">分组</th><th scope="col">交易笔数</th><th scope="col">交易占比</th><th scope="col">有结果 / 待结果</th><th scope="col">盈 / 亏 / 平</th><th scope="col">胜率</th><th scope="col">净盈亏</th><th scope="col">平均每笔结果</th><th scope="col">占全部净亏损</th></tr></thead><tbody>${analysisRows(stats.groups, stats)}</tbody></table>` : '<div class="empty"><strong>还没有可比较的交易</strong>先记录一笔交易的心理状态；实际进场后计入样本，结束后补上盈亏。</div>';
+        $("#discipline-table").innerHTML = stats.count ? `<table class="analysis-table"><caption>实际执行与结果对照</caption><thead><tr><th scope="col">最终执行情况</th><th scope="col">交易笔数</th><th scope="col">有结果 / 待结果</th><th scope="col">赚钱 / 亏损 / 持平</th><th scope="col">胜率</th><th scope="col">净盈亏</th></tr></thead><tbody>${analysisRows(stats.discipline, stats, false)}</tbody></table>` : "";
       }
       function render() {
         renderSummary();
+        renderAnalysis();
         const query = $("#search").value.trim().toLowerCase();
         const filter = $("#status-filter").value;
         const typeFilter = $("#record-type-filter").value;
@@ -712,6 +736,7 @@ export default function useJournal() {
             (t) =>
               (typeFilter === "all" || (typeFilter === "execution" ? isExecutionRecord(t) : !isExecutionRecord(t))) &&
               (filter === "all" || t.status === filter) &&
+              ($("#review-filter").value !== "pending" || needsReview(t)) &&
               (!query || JSON.stringify(t).toLowerCase().includes(query)),
           )
           .sort((a, b) =>
@@ -728,7 +753,8 @@ export default function useJournal() {
         list.innerHTML = sorted
           .map((t) => {
             const executionRecord = isExecutionRecord(t);
-            const pnl = pnlOf(t);
+            const result = tradeResult(t);
+            const pnl = result.pnl;
             const unrealizedPnl = latestUnrealizedPnl(t);
             const actions = [...(t.actions || [])].sort((a, b) =>
               b.at.localeCompare(a.at),
@@ -750,28 +776,25 @@ export default function useJournal() {
             return `<article class="panel trade-card" data-id="${esc(t.id)}">
           <div class="trade-top"><div><div class="trade-name"><h3>${esc(
             t.asset || "未命名标的",
-          )}</h3><span class="record-type-badge ${executionRecord ? "execution" : "decision"}">${executionRecord ? "执行历史" : "决策计划"}</span><span class="badge ${badgeClass}">${statusLabel(
+          )}</h3><span class="record-type-badge ${executionRecord ? "execution" : "decision"}">${executionRecord ? "执行历史" : "心理记录"}</span><span class="badge ${badgeClass}">${statusLabel(
               t.status,
             )}</span>${
               t.direction ? `<span class="tag">${esc(t.direction)}</span>` : ""
-            }</div><div class="trade-date">${executionRecord ? "开仓日期" : "计划日期"} ${esc(
+            }</div><div class="trade-date">${executionRecord ? "开仓日期" : "交易日期"} ${esc(
               t.date || "未填写",
             )} · ${actions.length} 条后续记录</div></div>
-            <div class="trade-stats"><div><div class="metric-label">本笔已实现</div><div class="pnl ${
+            <div class="trade-stats"><div><div class="metric-label">${t.psychology?.result ? "整笔最终净盈亏" : "已填流水合计"}</div><div class="pnl ${
               pnl > 0 ? "positive" : pnl < 0 ? "negative" : ""
-            }">${money(
-              pnl,
-            )}</div></div>${unrealizedPnl == null ? "" : `<div><div class="metric-label">最新浮动盈亏</div><div class="pnl ${unrealizedPnl > 0 ? "positive" : unrealizedPnl < 0 ? "negative" : ""}">${money(unrealizedPnl)}</div></div>`}<div><div class="metric-label">累计亏损</div><div class="pnl negative">${money(
-              (t.actions || []).reduce(
-                (s, a) => s + Math.max(0, -(Number(a.pnl) || 0)),
-                0,
-              ),
-            )}</div></div></div></div>
+            }">${result.known ? amount(pnl, result.currency) : t.psychology?.result?.stale ? "流水有变，请重新核对" : "未填写"}</div></div>${unrealizedPnl == null ? "" : `<div><div class="metric-label">最新浮动盈亏</div><div class="pnl ${unrealizedPnl > 0 ? "positive" : unrealizedPnl < 0 ? "negative" : ""}">${money(unrealizedPnl)}</div></div>`}</div></div>
           <div class="trade-meta">${tags
             .map((x) => `<span class="tag">${esc(x)}</span>`)
             .join("")}</div>
-          ${executionRecord ? '<div class="trade-controls"><span class="tag">OKX 导入 · 事后数据</span></div>' : `<div class="trade-controls"><label class="status-control">当前状态<select data-status-for="${esc(t.id)}" aria-label="修改${esc(t.asset || "该记录")}状态"><option value="planned" ${t.status === "planned" ? "selected" : ""}>计划中</option><option value="open" ${t.status === "open" ? "selected" : ""}>持仓中</option><option value="closed" ${t.status === "closed" ? "selected" : ""}>已结束</option><option value="cancelled" ${t.status === "cancelled" ? "selected" : ""}>已取消</option></select></label><button class="secondary" data-action="edit" type="button">编辑计划</button><button class="danger" data-action="delete" type="button">删除记录</button></div>`}
-          <details class="trade-details"><summary>${executionRecord ? "执行数据与盈亏详情" : "计划详情与操作流水"}</summary>
+          ${decisionCards.snapshot(t)}
+          <div class="mind-snapshot"><span><small>当时动机</small><strong>${esc(BASES[basisOf(t)])}</strong></span><span><small>情绪 / 冲动</small><strong>${esc(t.psychology?.emotion || "未记录")} · ${t.psychology?.urgeScore == null ? "强度未填" : esc(t.psychology.urgeScore) + "/10"}</strong></span><span><small>最终规则执行</small><strong>${esc(DISCIPLINES[disciplineOf(t)])}</strong></span></div>
+          <div class="trade-controls">${(t.status === "planned" || t.status === "skipped") ? '<button class="primary" data-action="quick-entry" type="button">已进场，开始跟踪</button>' : ""}<button class="primary" data-action="review" type="button">${needsReview(t) ? "补结果 / 核对规则" : t.status === "closed" ? "查看 / 修改复盘" : "结束 / 复盘"}</button></div>
+          ${reviewMarkup(t)}
+          ${executionRecord ? '<div class="trade-controls"><span class="tag">OKX 导入 · 事后数据</span></div>' : `<div class="trade-controls"><label class="status-control">当前状态<select data-status-for="${esc(t.id)}" aria-label="修改${esc(t.asset || "该记录")}状态"><option value="skipped" ${t.status === "skipped" ? "selected" : ""}>已跳过机会</option><option value="planned" ${t.status === "planned" ? "selected" : ""}>计划中</option><option value="open" ${t.status === "open" ? "selected" : ""}>持仓中</option><option value="closed" ${t.status === "closed" ? "selected" : ""}>已结束</option><option value="cancelled" ${t.status === "cancelled" ? "selected" : ""}>已取消</option></select></label><button class="secondary" data-action="edit" type="button">编辑当时状态</button><button class="danger" data-action="delete" type="button">删除记录</button></div>`}
+          <details class="trade-details"><summary>${executionRecord ? "执行数据与盈亏详情" : "当时记录与操作流水"}</summary>
             <div class="detail-grid">
               ${detail("交易理由", t.thesis)}${detail(
               "进场触发",
@@ -783,7 +806,7 @@ export default function useJournal() {
               "事后复盘",
               t.review,
             )}${t.migrationNote ? detail("迁移提醒", t.migrationNote) : ""}
-            </div>${t.psychology?.stage === "before" && t.psychology?.gates && !Object.values(t.psychology.gates).every(Boolean) ? '<div class="gate-block-notice">事前检查未全部通过 · 请调整后再考虑执行</div>' : ""}
+            </div>${t.psychology?.stage === "before" && t.psychology?.gateOutcome === "blocked" ? '<div class="gate-block-notice">事前检查未全部通过 · 请调整后再考虑执行</div>' : ""}
             ${executionRecord ? '<p class="event-note">OKX 仓位历史只提供实际开平仓与盈亏，不包含事前决策和心理记录。</p>' :
               `<h4 class="action-title">追加后续操作</h4>${t.status === "closed" || t.status === "cancelled" ? '<p class="event-note">这条记录已结束 / 取消；补录“执行进场”或“加仓”会重新标记为持仓中。</p>' : ""}<form class="action-form" data-action-form="${esc(
                     t.id,
@@ -835,6 +858,23 @@ export default function useJournal() {
           value ? esc(value) : '<span style="color:#9aa39d">未填写</span>'
         }</div></div>`;
       }
+      function reviewMarkup(t) {
+        const result = t.psychology?.result || {};
+        const calculated = tradeResult(t);
+        const skippedOpportunity = decisionCards.opportunityResult(t)?.skipped;
+        return `<details class="review-panel" data-review-panel><summary>整笔结果与执行复盘${needsReview(t) ? " · 待补全" : ""}</summary>
+          <p class="psych-intro">填写含手续费、资金费等成本的整笔最终净盈亏。这个数会替代流水合计，不会再与减仓 / 平仓盈亏相加。${skippedOpportunity ? "本次未持仓，C 收益固定为 0，保存后保留已跳过状态。" : "保存后标记为已结束。"}</p>
+          <form data-review-form="${esc(t.id)}" class="form-grid">
+            <label class="field"><span>整笔最终净盈亏 *</span><input name="netPnl" type="number" step="any" required ${skippedOpportunity ? 'readonly value="0"' : `value="${result.netPnl != null ? esc(result.netPnl) : calculated.known ? esc(calculated.pnl) : ""}"`} placeholder="亏损填负数，持平请明确填 0"><small>${result.stale ? "复盘后流水或状态有变，预填的旧净额需要重新核对；确认前不计入结果分析。" : result.netPnl != null ? "已保存的最终净额" : calculated.known ? "已预填流水合计，请核对是否包含所有成本。" : "未填写不会被当作持平。"}</small></label>
+            <label class="field"><span>盈亏币种 *</span><input name="currency" required pattern="[A-Za-z0-9]{2,10}" maxlength="10" value="${esc(t.psychology?.decisionCard?.currency || calculated.currency)}" placeholder="如 USDT、USD、BTC"></label>
+            ${decisionCards.reviewFields(t)}
+            <label class="field"><span>整笔交易实际执行情况 *</span><select name="discipline" required><option value="">结束后重新核对</option>${Object.entries(DISCIPLINES).map(([key, label]) => `<option value="${key}" ${result.discipline === key ? "selected" : ""}>${label}</option>`).join("")}</select><small>从进场、持仓到退出一起核对，和入场时的自我判断分开保存。</small></label>
+            <label class="field"><span>当时的行情情况（选填）</span><input name="context" value="${esc(result.context || "")}" placeholder="例如：上涨趋势 / 震荡 / 突发消息"></label>
+            <label class="field full"><span>实际偏离了哪些规则？（选填）</span><textarea name="deviation" placeholder="例如：止损往外移、提前止盈、盘中临时加仓">${esc(result.deviation || "")}</textarea></label>
+            <label class="field full"><span>这次结果和过程，给我的反馈（选填）</span><textarea name="review" placeholder="例如：这次冲动追涨赚了钱，但没有按规则，下次仍需等待确认。">${esc(t.review || "")}</textarea></label>
+            <div class="form-actions field full"><button class="primary" type="submit">${skippedOpportunity ? "保存机会复盘" : t.status === "closed" ? "保存结束复盘" : "结束交易并保存复盘"}</button><span class="psych-intro">${result.reviewedAt ? `上次复盘：${esc(formatTime(result.reviewedAt))}` : "当时的动机和情绪会原样保留。"}</span></div>
+          </form></details>`;
+      }
       function psychText(p = {}) {
         if (p.recordType === "execution")
           return "OKX 执行历史（事后导入）；源文件不含事前计划和心理状态。";
@@ -845,12 +885,17 @@ export default function useJournal() {
           ruleBreak: "偏离规则",
         };
         const checks = Object.keys(names)
-          .map((k) => `${names[k]}：${p[k] ? "是" : "否"}`)
+          .map((k) => `${names[k]}：${typeof p[k] === "boolean" ? p[k] ? "是" : "否" : "未记录"}`)
           .join("；");
         return [
-          p.stage === "after" ? "下单后补记（未完成事前门槛）" : "下单前记录",
+          p.stage === "after" ? "下单后补记" : p.stage === "before" ? "下单前记录" : "记录时机未填写",
+          p.recordedAt ? `记录时间：${formatTime(p.recordedAt)}` : "",
+          `主要动机：${BASES[p.decisionBasis] || "未记录"}`,
+          p.entryDiscipline ? `入场规则情况：${DISCIPLINES[p.entryDiscipline] || "未记录"}` : "",
+          p.ruleReference ? `对照规则：${p.ruleReference}` : "",
+          p.stateNote ? `当时原话：${p.stateNote}` : "",
           p.urgeScore != null ? `冲动评分：${p.urgeScore}/10${p.cooldownRequired ? "；建议暂停 10 分钟" : ""}` : "",
-          p.gates ? `事前检查${Object.values(p.gates).every(Boolean) ? "：全部通过" : "：未全部通过（先调整，不要执行）"}；策略条件${p.gates.setup ? "是" : "否/未确认"}、失效条件${p.gates.invalidation ? "是" : "否/未确认"}、风险核算${p.gates.risk ? "是" : "否/未确认"}、止损接受${p.gates.accept ? "是" : "否/未确认"}` : "",
+          p.stage !== "after" && p.gates ? `选填开仓检查：${Object.values(p.gates).every(Boolean) ? "全部通过" : "未全部确认"}` : "",
           p.plan?.theoreticalLoss != null ? `理论到 SL：${p.plan.theoreticalLoss} ${p.plan.settlementCurrency}；理论到 TP：${p.plan.theoreticalProfit} ${p.plan.settlementCurrency}；盈亏比 1:${Number(p.plan.rewardRiskRatio).toFixed(2)}` : "",
           p.emotion ? `情绪：${p.emotion}` : "",
           p.trigger ? `触发点：${p.trigger}` : "",
@@ -952,20 +997,23 @@ export default function useJournal() {
         const planValues = values.psychology?.plan || {};
         row.innerHTML = `<label>品种<input data-key="asset" placeholder="BTC-USDT-SWAP" required value="${esc(values.asset || "")}"></label>
           <label>方向<select data-key="direction"><option value="">选择</option><option>做多</option><option>做空</option><option>观察 / 未决定</option></select></label>
+          <details class="position-specs"><summary>价格、仓位与风险计算（选填）</summary><div class="position-specs-grid">
           <label>计划数量<input data-key="quantity" type="number" min="0" step="any" placeholder="币数量 / 合约张数" value="${esc(planValues.quantity ?? "")}"></label>
+          <label>进场价<input data-key="entryPrice" inputmode="decimal" placeholder="可选" value="${esc(values.entryPrice || values.entry?.replace("进场价 ", "") || "")}"></label>
+          <label>TP<input data-key="takeProfit" inputmode="decimal" placeholder="止盈价" value="${esc(values.takeProfit || values.exitPlan?.replace("止盈价 ", "") || "")}"></label>
+          <label>SL<input data-key="stopLoss" inputmode="decimal" placeholder="止损价" value="${esc(values.stopLoss || values.invalidation?.replace("止损价 ", "") || "")}"></label>
           <label>产品类型<select data-key="contractType"><option value="">选择类型</option><option value="linear">线性合约</option><option value="inverse">反向合约</option><option value="spot">现货</option></select></label>
           <label>合约面值<input data-key="contractValue" type="number" min="0" step="any" placeholder="按 OKX 合约规格" value="${esc(planValues.contractValue ?? "")}"></label>
           <label>合约乘数<input data-key="contractMultiplier" type="number" min="0" step="any" placeholder="按 OKX 合约规格" value="${esc(planValues.contractMultiplier ?? "")}"></label>
           <label>结算币<input data-key="settlementCurrency" placeholder="USDT / BTC" value="${esc(planValues.settlementCurrency || "USDT")}"></label>
-          <label>进场价<input data-key="entryPrice" inputmode="decimal" placeholder="可选" value="${esc(values.entryPrice || values.entry?.replace("进场价 ", "") || "")}"></label>
-          <label>TP<input data-key="takeProfit" inputmode="decimal" placeholder="止盈价" value="${esc(values.takeProfit || values.exitPlan?.replace("止盈价 ", "") || "")}"></label>
-          <label>SL<input data-key="stopLoss" inputmode="decimal" placeholder="止损价" value="${esc(values.stopLoss || values.invalidation?.replace("止损价 ", "") || "")}"></label>
           <label>单笔风险上限<input data-key="maxRisk" type="number" min="0" step="0.01" placeholder="USDT / 结算币" value="${esc(values.maxRisk ?? "")}"></label>
           <div class="plan-estimate" data-plan-estimate aria-live="polite"></div>
+          </div></details>
           <button type="button" class="quiet remove-position" aria-label="删除品种">删除</button>`;
         const direction = values.direction === "long" ? "做多" : values.direction === "short" ? "做空" : values.direction || "";
         row.querySelector('[data-key="direction"]').value = direction;
         row.querySelector('[data-key="contractType"]').value = planValues.contractType || "";
+        row.querySelector(".position-specs").open = false;
         row.querySelectorAll("input, select").forEach((input) => {
           input.addEventListener("input", () => updatePositionEstimate(row));
           input.addEventListener("change", () => updatePositionEstimate(row));
@@ -978,6 +1026,16 @@ export default function useJournal() {
         return row;
       }
       $("#add-position").addEventListener("click", () => addPosition());
+      function applyEntryStage() {
+        const after = $("#trade-form").entryStage.value === "after";
+        $("#trade-form").classList.toggle("after-mode", after);
+        $("#impulse-title").textContent = after ? "02 · 回想下单当时的状态" : "02 · 我现在为什么想做这笔单？";
+        if (after) $("#urge-warning").classList.add("hidden");
+
+      }
+      $$('input[name="entryStage"]').forEach((radio) =>
+        radio.addEventListener("change", applyEntryStage),
+      );
       function resetForm() {
         const form = $("#trade-form");
         if (form && $("#trade-form-home") && form.parentElement !== $("#trade-form-home"))
@@ -985,6 +1043,8 @@ export default function useJournal() {
         $("#edit-modal").classList.add("hidden");
         $("#edit-modal").setAttribute("aria-hidden", "true");
         editingId = null;
+        decisionCards.reset();
+        $("#unknown-stage-option").classList.add("hidden");
         form.reset();
         $("#form-errors").classList.add("hidden");
         $$(".field-invalid, .check-invalid").forEach((el) => el.classList.remove("field-invalid", "check-invalid"));
@@ -992,11 +1052,12 @@ export default function useJournal() {
         $("#trade-date").value = today();
         positionList.innerHTML = "";
         addPosition();
-        $("#form-title").textContent = "新建一笔交易";
+        $("#form-title").textContent = "记下此刻的自己";
         $("#form-mode-title").textContent = "新建模式";
         $("#form-mode-description").textContent = "提交后会创建一条新的交易记录。";
-        $("#save-trade").textContent = "创建新交易记录";
+        $("#save-trade").textContent = "保存当时状态";
         $("#cancel-edit").classList.add("hidden");
+        applyEntryStage();
       }
       function startEdit(t) {
         editingId = t.id;
@@ -1010,7 +1071,9 @@ export default function useJournal() {
         f.thesis.value = t.thesis || "";
         positionList.innerHTML = "";
         addPosition(t);
-        f.entryStage.value = t.psychology?.stage || "before";
+        f.entryStage.value = t.psychology?.stage || "unknown";
+        $("#unknown-stage-option").classList.toggle("hidden", ["before", "after"].includes(t.psychology?.stage));
+        applyEntryStage();
         f.urgency.checked = !!t.psychology?.urgency;
         f.impulse.checked = !!t.psychology?.impulse;
         f.relief.checked = !!t.psychology?.relief;
@@ -1018,13 +1081,18 @@ export default function useJournal() {
         f.urgeScore.value = t.psychology?.urgeScore == null ? "" : String(t.psychology.urgeScore);
         $("#urge-warning").classList.toggle("hidden", Number(f.urgeScore.value) < 7);
         f.emotion.value = t.psychology?.emotion || "";
+        f.decisionBasis.value = t.psychology?.decisionBasis || "unknown";
+        f.entryDiscipline.value = t.psychology?.entryDiscipline || "unknown";
+        f.ruleReference.value = t.psychology?.ruleReference || "";
+        f.stateNote.value = t.psychology?.stateNote || "";
         f.trigger.value = t.psychology?.trigger || "";
         f.skipped.value = t.psychology?.skipped || "";
         f.gateSetup.checked = !!t.psychology?.gates?.setup;
         f.gateInvalidation.checked = !!t.psychology?.gates?.invalidation;
         f.gateRisk.checked = !!t.psychology?.gates?.risk;
         f.gateAccept.checked = !!t.psychology?.gates?.accept;
-        $("#form-title").textContent = "编辑交易计划";
+        decisionCards.edit(t);
+        $("#form-title").textContent = "编辑当时状态";
         $("#form-mode-title").textContent = "编辑模式 · 不会新建交易";
         $("#form-mode-description").textContent = `正在修改「${t.asset || "未命名标的"}」的已有记录。保存只会更新这条记录，原有操作流水会保留。`;
         $("#save-trade").textContent = "保存修改到这条记录";
@@ -1042,7 +1110,7 @@ export default function useJournal() {
           risk: f.gateRisk.checked,
           accept: f.gateAccept.checked && !(entryStage === "before" && urgeScore >= 7),
         };
-        const missing = [];
+        const missing = decisionCards.validate(editingId);
         let firstMissing = null;
         $("#form-errors").classList.add("hidden");
         $$(".field-invalid, .check-invalid").forEach((el) => el.classList.remove("field-invalid", "check-invalid"));
@@ -1051,10 +1119,17 @@ export default function useJournal() {
           firstMissing ||= $("#trade-date");
           $("#trade-date").classList.add("field-invalid");
         }
-        if (entryStage === "before" && urgeScore == null) {
-          missing.push("下单前冲动评分");
+        if (entryStage === "before" && urgeScore == null && !editingId) {
+          missing.push("当时的冲动强度（0–10）");
           firstMissing ||= f.urgeScore;
           f.urgeScore.classList.add("field-invalid");
+        }
+        for (const [name, label] of [["decisionBasis", "主要下单动机"], ["emotion", "当时的情绪"], ["entryDiscipline", "入场规则情况"]]) {
+          if (!f.elements.namedItem(name).value) {
+            missing.push(label);
+            firstMissing ||= f.elements.namedItem(name);
+            f.elements.namedItem(name).classList.add("field-invalid");
+          }
         }
         const rows = [...positionList.querySelectorAll(".position-row")];
         rows.forEach((row, index) => {
@@ -1088,22 +1163,29 @@ export default function useJournal() {
           thesis: f.thesis.value.trim(),
           psychology: {
             ...trades.find((x) => x.id === editingId)?.psychology,
+            opportunitySkipped: editingId ? !!trades.find(x => x.id === editingId)?.psychology?.opportunitySkipped : f.actualDecision.value === "skip",
+            decisionCard: editingId ? trades.find(x => x.id === editingId)?.psychology?.decisionCard : decisionCards.capture(entryStage),
             stage: entryStage,
             gates,
-            gateOutcome: entryStage === "before"
-              ? (Object.values(gates).every(Boolean) ? "passed" : "blocked")
-              : "after-entry",
-            urgency: f.urgency.checked,
+            gateOutcome: entryStage === "before" ? (Object.values(gates).every(Boolean) ? "passed" : "not-checked") : "after-entry",
+            decisionBasis: f.decisionBasis.value,
+            entryDiscipline: f.entryDiscipline.value,
+            ruleReference: f.ruleReference.value.trim(),
+            stateNote: f.stateNote.value.trim(),
+            recordedAt: trades.find((x) => x.id === editingId)?.psychology?.recordedAt || stamp(),
+            urgency: f.urgency.checked || f.decisionBasis.value === "fomo" ? true : null,
             urgeScore,
             cooldownRequired: entryStage === "before" && urgeScore >= 7,
-            impulse: f.impulse.checked,
-            relief: f.relief.checked,
-            ruleBreak: f.ruleBreak.checked,
+            impulse: f.impulse.checked ? true : null,
+            relief: f.relief.checked ? true : null,
+            ruleBreak: f.ruleBreak.checked || ["partial", "broken"].includes(f.entryDiscipline.value) ? true : null,
             emotion: f.emotion.value,
             trigger: f.trigger.value.trim(),
             skipped: f.skipped.value.trim(),
           },
         };
+        const originalPsychology = trades.find(x => x.id === editingId)?.psychology;
+        if (originalPsychology?.decisionCard) shared.psychology = structuredClone(originalPsychology);
         const items = rows.map((row) => {
           const value = (key) => row.querySelector(`[data-key="${key}"]`).value.trim();
           const entryPrice = value("entryPrice");
@@ -1139,31 +1221,31 @@ export default function useJournal() {
         if (editingId) {
           const saved = trades.find((x) => x.id === editingId);
           if (saved) { Object.assign(saved, items[0], { updatedAt: stamp() }); savedTrades.push(saved); }
-          $("#form-status").textContent = "计划已更新，原有操作流水保留。";
+          $("#form-status").textContent = "当时状态已更新，原有操作流水和结束复盘保留。";
         } else {
           const alreadyEntered = entryStage === "after";
           for (const item of items) {
-            const saved = { ...item, id: id(), createdAt: stamp(), status: alreadyEntered ? "open" : "planned", actions: [], review: "" };
-            if (alreadyEntered) saved.actions.push({
+            const saved = { ...item, id: id(), createdAt: stamp(), status: item.psychology.decisionCard?.actual === "skip" ? "skipped" : alreadyEntered ? "open" : "planned", actions: [], review: "" };
+            if (alreadyEntered && saved.status !== "skipped") saved.actions.push({
               id: id(), at: stamp(), type: "entry",
               note: `先下单后补记。情绪：${item.psychology.emotion || "未记录"}；${item.psychology.skipped || "未填写跳过项"}`,
               pnl: null,
             });
             trades.unshift(saved); savedTrades.push(saved);
           }
-          const gatesPassed = Object.values(gates).every(Boolean);
           $("#form-status").textContent = alreadyEntered
             ? `已保存 ${savedTrades.length} 条持仓记录，并标记为下单后补记。`
-            : gatesPassed
-              ? `已保存 ${savedTrades.length} 条独立交易计划；4 项事前检查全部通过。`
-              : `已保存 ${savedTrades.length} 条待调整计划。事前检查未全部通过，请勿按当前计划执行。`;
+            : `已保存 ${savedTrades.length} 条心理记录，进场后请在“交易与复盘”标记。`;
         }
         if (persist()) {
           render();
           resetForm();
           if (cloudUser && savedTrades.length)
-            Promise.all(savedTrades.map((saved) => cloudWriteTrade(saved, isNew)))
-              .then(() => cloudMessage("交易计划已保存并同步到云端。"))
+            Promise.all(savedTrades.map(async (saved) => {
+              await cloudWriteTrade(saved, isNew);
+              if (isNew) for (const action of saved.actions) await cloudWriteAction(saved, action);
+            }))
+              .then(() => cloudMessage("当时状态已保存并同步到云端。"))
               .catch(cloudReport);
           setTimeout(() => ($("#form-status").textContent = ""), 3500);
         }
@@ -1180,6 +1262,7 @@ export default function useJournal() {
         setTimeout(() => {
           if (!editingId) $("#trade-date").value = today();
           $("#urge-warning").classList.add("hidden");
+          applyEntryStage();
         }, 0),
       );
       $("#trade-form").urgeScore.addEventListener("change", (event) => {
@@ -1197,6 +1280,25 @@ export default function useJournal() {
         if (!card) return;
         const t = trades.find((x) => x.id === card.dataset.id);
         if (!t) return;
+        if (btn.dataset.action === "review") {
+          const panel = card.querySelector("[data-review-panel]");
+          panel.open = true;
+          panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          panel.querySelector("input").focus({ preventScroll: true });
+        }
+        if (btn.dataset.action === "quick-entry" && ["planned", "skipped"].includes(t.status)) {
+          const action = { id: id(), at: stamp(), type: "entry", note: "已确认实际进场；当时心理记录保留。", pnl: null };
+          invalidateReview(t, "entry");
+          t.actions ||= [];
+          t.actions.push(action);
+          t.status = "open";
+          t.psychology.opportunitySkipped = false;
+          t.updatedAt = stamp();
+          if (persist()) {
+            render();
+            if (cloudUser) cloudWriteAction(t, action).catch(cloudReport);
+          }
+        }
         if (btn.dataset.action === "edit") startEdit(t);
         if (btn.dataset.action === "edit-event") {
           const action = t.actions.find((item) => item.id === btn.dataset.eventId);
@@ -1225,7 +1327,10 @@ export default function useJournal() {
           confirm("删除这条操作及其盈亏记录？")
         ) {
           const eventId = btn.dataset.eventId;
+          const removedAction = t.actions.find(a => a.id === eventId);
+          invalidateReview(t, removedAction?.type, removedAction?.pnl);
           t.actions = t.actions.filter((a) => a.id !== eventId);
+          t.updatedAt = stamp();
           persist();
           render();
           if (cloudUser)
@@ -1234,6 +1339,7 @@ export default function useJournal() {
               .delete()
               .eq("id", eventId)
               .then(requireCloud)
+              .then(() => cloudWriteTrade(t))
               .then(() => cloudMessage("云端操作流水已删除。"))
               .catch(cloudReport);
         }
@@ -1243,13 +1349,19 @@ export default function useJournal() {
         if (!statusSelect) return;
         const trade = trades.find((item) => item.id === statusSelect.dataset.statusFor);
         if (!trade) return;
+        if (statusSelect.value === "skipped" && (trade.actions || []).some(a => ["entry", "add"].includes(a.type))) {
+          alert("这笔已有进场流水，不能当作未持仓跳过。请使用已结束 / 已取消状态。"); render(); return;
+        }
         trade.status = statusSelect.value;
+        trade.psychology ||= {};
+        trade.psychology.opportunitySkipped = trade.status === "skipped";
+        if (trade.status !== "closed") invalidateReview(trade, "status");
         trade.updatedAt = stamp();
         if (persist()) {
           render();
           if (cloudUser)
             cloudDb.from("trade_records")
-              .update({ status: trade.status, updated_at: trade.updatedAt })
+              .update({ status: trade.status === "skipped" ? "cancelled" : trade.status, psychology: trade.psychology || {}, updated_at: trade.updatedAt })
               .eq("id", trade.id)
               .then(requireCloud)
               .then(() => cloudMessage("记录状态已修改并同步到云端。"))
@@ -1257,6 +1369,37 @@ export default function useJournal() {
         }
       });
       document.addEventListener("submit", (e) => {
+        const reviewForm = e.target.closest("[data-review-form]");
+        if (reviewForm) {
+          e.preventDefault();
+          if (!reviewForm.reportValidity()) return;
+          const t = trades.find(x => x.id === reviewForm.dataset.reviewForm);
+          if (!t) return;
+          const fd = new FormData(reviewForm);
+          const skipOpportunity = decisionCards.opportunityResult(t)?.skipped;
+          const netPnl = skipOpportunity ? 0 : Number(fd.get("netPnl"));
+          const discipline = String(fd.get("discipline"));
+          if (String(fd.get("netPnl")).trim() === "" || !Number.isFinite(netPnl) || !Object.hasOwn(DISCIPLINES, discipline)) return;
+          t.psychology = { ...t.psychology, result: {
+            ...t.psychology?.result,
+            ...decisionCards.comparisonData(fd, t),
+            stale: false,
+            netPnl,
+            currency: String(fd.get("currency")).trim().toUpperCase(),
+            discipline,
+            context: String(fd.get("context")).trim(),
+            deviation: String(fd.get("deviation")).trim(),
+            reviewedAt: stamp(),
+          } };
+          t.review = String(fd.get("review")).trim();
+          t.status = skipOpportunity ? "skipped" : "closed";
+          t.updatedAt = stamp();
+          if (persist()) {
+            render();
+            if (cloudUser) cloudWriteTrade(t).then(() => cloudMessage("整笔结果与执行复盘已同步。" )).catch(cloudReport);
+          }
+          return;
+        }
         const editForm = e.target.closest("[data-event-edit]");
         if (editForm) {
           e.preventDefault();
@@ -1267,6 +1410,8 @@ export default function useJournal() {
           const fd = new FormData(editForm);
           const date = new Date(String(fd.get("at")));
           if (Number.isNaN(date.getTime())) return;
+          invalidateReview(t, action.type, action.pnl);
+          invalidateReview(t, String(fd.get("type")), fd.get("pnl"));
           action.at = date.toISOString();
           action.type = String(fd.get("type"));
           action.note = String(fd.get("note")).trim();
@@ -1305,8 +1450,9 @@ export default function useJournal() {
           unrealizedPnl: String(fd.get("unrealizedPnl")).trim() === "" ? null : Number(fd.get("unrealizedPnl")),
         };
         t.actions.push(ev);
+        invalidateReview(t, ev.type, ev.pnl);
         t.updatedAt = stamp();
-        if (type === "entry" || type === "add") t.status = "open";
+        if (type === "entry" || type === "add") { t.status = "open"; t.psychology.opportunitySkipped = false; }
         if (type === "exit" || type === "stopped") t.status = "closed";
         if (type === "cancel") t.status = "cancelled";
         if (persist()) {
@@ -1317,12 +1463,22 @@ export default function useJournal() {
               .catch(cloudReport);
         }
       });
-      ["search", "record-type-filter", "status-filter", "sort-filter"].forEach((x) =>
+      ["search", "record-type-filter", "status-filter", "sort-filter", "review-filter"].forEach((x) =>
         $("#" + x).addEventListener(
           x === "search" ? "input" : "change",
           render,
         ),
       );
+      ["analysis-from", "analysis-to", "analysis-stage", "analysis-currency", "analysis-dimension"].forEach(id =>
+        $("#" + id).addEventListener("change", renderAnalysis),
+      );
+      $("#analysis-reset").addEventListener("click", () => {
+        $("#analysis-from").value = "";
+        $("#analysis-to").value = "";
+        $("#analysis-stage").value = "before";
+        $("#analysis-currency").value = "all";
+        renderAnalysis();
+      });
       $("#export-btn").addEventListener("click", () => {
         const blob = new Blob(
           [
