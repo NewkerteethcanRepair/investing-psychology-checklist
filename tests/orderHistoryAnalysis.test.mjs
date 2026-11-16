@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import { summarizeOrderHistory } from '../src/composables/orderHistoryAnalysis.mjs';
+const order = (pnl, fee, currency = 'USDT') => ({ PNL: pnl, Fee: fee, 'Price Unit': currency, 'Fee Unit': currency, fills: [{ Fee: '-999', PNL: '999' }] });
+const orphan = { Symbol: 'BTC', 'Order ID': 'orphan', 'Trade ID': 'fill', Fee: '-0.5', 'Fee Unit': 'USDT' };
+const result = summarizeOrderHistory({ orders: [order('10', '-1'), order('-4', '0.2'), order('1', '-0.01', 'BTC')], unmatchedFills: [orphan, orphan] });
+assert.equal(result.currencies[0].pnl, 6);
+assert.equal(result.currencies[0].fees, -1.3);
+assert.equal(result.currencies[0].net, 4.7);
+assert.equal(result.currencies[1].net, 0.99);
+assert.equal(result.unmatched, 2);
+assert.equal(summarizeOrderHistory({ orders: [order('', 'invalid')] }).missing, 2);
+assert.equal(summarizeOrderHistory({ orders: [order('0', '0')] }).missing, 0);
+assert.deepEqual(summarizeOrderHistory(null).currencies, []);
+console.log('Order summaries: currency separation, signed fees, unmatched fills, missing data and no double counting passed.');

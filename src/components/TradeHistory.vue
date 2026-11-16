@@ -3,13 +3,15 @@
     id="history-view"
     class="view"
   >
+    <p class="privacy">按导出范围内开平数量自动整理交易过程与盈亏，直接展开查看。规则核对和一句话备注均为选填；缺少开仓或平仓的交易组单独标明。</p>
     <div class="history-head">
       <h2>交易与复盘</h2>
+      <button id="clear-journal" class="danger" type="button">清空浏览器和云端复盘记录</button>
       <div class="filters">
         <select id="record-type-filter" aria-label="记录类型">
           <option value="all">全部记录</option>
           <option value="decision">心理记录</option>
-          <option value="execution">OKX 执行历史</option>
+          <option value="execution">导入执行记录</option>
         </select>
         <input
           id="search"

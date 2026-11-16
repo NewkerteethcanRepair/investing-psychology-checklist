@@ -1,3 +1,5 @@
+import { buildOrderExecutions, mergeOrderExecutions } from "./orderExecutions.mjs";
+import { ORDER_HISTORY_EVENT, ORDER_HISTORY_KEY, validateOrderHistory, importOrderHistory } from "./orderHistory.mjs";
 import { journalDates } from "./journalDates";
 import { onMounted, watch } from "vue";
 import { initDecisionCards } from "./decisionCards.mjs";
@@ -20,8 +22,34 @@ export default function useJournal() {
         `trade-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
       const stamp = () => new Date().toISOString();
       let trades = load();
-      const localSnapshot = structuredClone(trades);
+      let localSnapshot = structuredClone(trades);
       let editingId = null;
+      let cloudKnownIds = new Set();
+      let syncingExecutions = false;
+      let executionSyncPending = false;
+      function mergeSavedOrders() {
+        try {
+          const raw = localStorage.getItem(ORDER_HISTORY_KEY);
+          if (raw) trades = mergeOrderExecutions(trades, buildOrderExecutions(validateOrderHistory(JSON.parse(raw))));
+        } catch (error) { cloudMessage("委托整理失败：" + error.message); }
+      }
+      async function syncExecutions() {
+        if (!cloudUser) return;
+        if (syncingExecutions) { executionSyncPending = true; return; }
+        syncingExecutions = true;
+        try {
+          for (const trade of trades.filter(t => t.psychology?.orderExecution)) {
+            await cloudWriteTrade(trade, !cloudKnownIds.has(trade.id));
+            cloudKnownIds.add(trade.id);
+          }
+          cloudMessage("交易过程与快捷复盘已同步到云端。");
+        } catch (error) { cloudReport(error); }
+        finally {
+          syncingExecutions = false;
+          if (executionSyncPending) { executionSyncPending = false; syncExecutions(); }
+        }
+      }
+
       const CLOUD_ENV = "disciplinary-rabbit-d0bm123b1750";
       const CLOUD_KEY =
         "eyJhbGciOiJSUzI1NiIsImtpZCI6ImY4Y2ZjNDAyLTZiYjgtNDA3ZC1iYWRjLTkyZDRkMTg3NDUyMSJ9.eyJpc3MiOiJodHRwczovL2Rpc2NpcGxpbmFyeS1yYWJiaXQtZDBibTEyM2IxNzUwLmFwLXNoYW5naGFpLnRjYi1hcGkudGVuY2VudGNsb3VkYXBpLmNvbSIsInN1YiI6ImFub24iLCJhdWQiOiJkaXNjaXBsaW5hcnktcmFiYml0LWQwYm0xMjNiMTc1MCIsImV4cCI6NDA5ODIyMjg1MSwiaWF0IjoxNzk0NTM5NjUxLCJub25jZSI6IlNiM3NnUEdTUVZxRDZHUWJaNlNEdWciLCJhdF9oYXNoIjoiU2Izc2dQR1NRVnFENkdRYlo2U0R1ZyIsIm5hbWUiOiJBbm9ueW1vdXMiLCJzY29wZSI6ImFub255bW91cyIsInByb2plY3RfaWQiOiJkaXNjaXBsaW5hcnktcmFiYml0LWQwYm0xMjNiMTc1MCIsIm1ldGEiOnsicGxhdGZvcm0iOiJQdWJsaXNoYWJsZUtleSJ9LCJyb2xlIjoiYW5vbiIsImlzX2Fub255bW91cyI6dHJ1ZSwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiYW5vbnltb3VzIiwicHJvdmlkZXJzIjpbImFub255bW91cyJdfSwidXNlcl9tZXRhZGF0YSI6eyJuYW1lIjoiQW5vbnltb3VzIn0sInVzZXJfdHlwZSI6IiIsImNsaWVudF90eXBlIjoiY2xpZW50X3VzZXIiLCJpc19zeXN0ZW1fYWRtaW4iOmZhbHNlfQ.c75M8ekxTrsv-lAH3Q6jKK5g3gddFbJLpfa3k-x4QuaByKxhgpRArtC16I_I8CSbL5L6YkPHO-n5fW3gTgxdfCiU1brgEnziVXcq9vwIIPcWRrYk47sbX9wVpv5wNaZBrr7vpN21jXHrd3nib0TYZwyiQsLQ9Pi5dhUbFa4Pjb1JlnD9io8NLfkuLfMeWvCE7as_CpWcY8Ks5LH9xna8obP5A5QMXWSlkcBF1609PWimJi_ChvFerEFFPt3sCWGeFpiIGmGcSeuX0aJVCNaGRIJaPHrFUbJbCnStWLoEEbIgAR-ogNzu0ke6b-i2yo7iu9whLqoDA4wtZcacMxxTaw";
@@ -334,9 +362,9 @@ export default function useJournal() {
           status: r.status === "cancelled" && r.psychology?.opportunitySkipped ? "skipped" : r.status || "planned",
           psychology: r.psychology || {},
           review: r.review || "",
-          createdAt: r.created_at || stamp(),
+          createdAt: r.psychology?.orderExecution?.orders?.[0]?.["Order Time"] || r.created_at || stamp(),
           updatedAt: r.updated_at || r.created_at || stamp(),
-          actions: actions
+          actions: r.psychology?.orderExecution?.actions || actions
             .filter((a) => a.trade_id === r.id)
             .map((a) => ({
               id: a.id,
@@ -360,7 +388,10 @@ export default function useJournal() {
         ]);
         const records = requireCloud(tr) || [],
           actions = requireCloud(ar) || [];
+        cloudKnownIds = new Set(records.map(r => r.id));
         trades = records.map((r) => fromCloudTrade(r, actions));
+        mergeSavedOrders();
+        if (trades.some(t => t.psychology?.orderExecution)) $("#analysis-stage").value = "all";
         persist();
         render();
         cloudMessage(
@@ -417,6 +448,7 @@ export default function useJournal() {
       async function cloudStart(user) {
         cloudUser = user;
         await cloudLoad();
+        await syncExecutions();
       }
       async function cloudLogin() {
         const login = $("#cloud-user").value.trim(),
@@ -600,6 +632,7 @@ export default function useJournal() {
       function persist() {
         try {
           localStorage.setItem(STORE, JSON.stringify(trades));
+          window.dispatchEvent(new Event("journal-updated"));
           return true;
         } catch {
           alert("浏览器存储失败。请导出备份后清理空间，或使用其他浏览器。");
@@ -672,7 +705,7 @@ export default function useJournal() {
       }
       const percent = (value) => value == null ? "—" : `${(value * 100).toFixed(1)}%`;
       function amount(value, currency) {
-        return `${Number(value).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 8 })} ${esc(currency)}`;
+        return `${Number(value).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${esc(currency)}`;
       }
       function currencyTotals(currencies, field = "net", average = false) {
         const values = Object.entries(currencies).sort(([a], [b]) => a.localeCompare(b));
@@ -680,6 +713,7 @@ export default function useJournal() {
       }
       function needsReview(t) {
         const opportunity = decisionCards.opportunityResult(t);
+        if (t.psychology?.orderExecution) return false;
         if (opportunity && ["closed", "skipped"].includes(t.status) && opportunity.eligible && !opportunity.paired) return true;
         return t.status === "closed" && (!tradeResult(t).known || disciplineOf(t) === "unknown");
       }
@@ -689,13 +723,13 @@ export default function useJournal() {
       }
       function renderSummary() {
         const all = analyzeTrades(trades);
+        $("#journal-summary-empty").classList.toggle("hidden", trades.length > 0);
+        $("#journal-summary-metrics").classList.toggle("hidden", trades.length === 0);
         $("#sample-count").textContent = all.count;
-        $("#review-count").textContent = trades.filter(needsReview).length;
+        $("#review-count").textContent = trades.filter(t => t.psychology?.orderExecution && !t.psychology.orderExecution.complete).length;
         $("#settled-pnl").innerHTML = currencyTotals(all.currencies);
-        const reviewed = all.sample.filter(t => t.status === "closed" && disciplineOf(t) !== "unknown");
-        const followed = reviewed.filter(t => disciplineOf(t) === "followed").length;
-        $("#discipline-rate").textContent = reviewed.length ? percent(followed / reviewed.length) : "—";
-        $("#discipline-scope").textContent = `完全守规则 ${followed} / 已结束且已核对 ${reviewed.length} 笔`;
+        $("#discipline-rate").textContent = percent(all.winRate);
+        $("#discipline-scope").textContent = `盈利 ${all.wins} / 亏损 ${all.losses} / 持平 ${all.flats} · 仅完整且有结果的交易`;
         $("#history-count").textContent = trades.length;
       }
       function analysisRows(rows, total, includeShare = true) {
@@ -721,7 +755,7 @@ export default function useJournal() {
         }
         decisionCards.renderAnalysis({ from, to, stage: $("#analysis-stage").value, currency: currencySelect.value });
         const stats = analyzeTrades(trades, { from, to, stage: $("#analysis-stage").value, currency: currencySelect.value, dimension: $("#analysis-dimension").value });
-        $("#analysis-scope").textContent = `当前 ${stats.count} 笔已执行交易；${stats.settled} 笔有最终结果，${stats.open} 笔持仓中，${stats.missingResult} 笔已结束但未填盈亏。下单后补记 ${stats.retrospective} 笔，时机不详 ${stats.unknownStage} 笔；动机缺失 ${stats.missingBasis} 笔，未核对最终执行 ${stats.count - stats.reviewed} 笔。`;
+        $("#analysis-scope").textContent = `当前 ${stats.count} 笔已执行交易；${stats.settled} 笔有最终结果，${stats.open} 笔未结束或范围待核对，${stats.missingResult} 笔已结束但未填盈亏。下单后补记 ${stats.retrospective} 笔，时机不详 ${stats.unknownStage} 笔；动机缺失 ${stats.missingBasis} 笔，未核对最终执行 ${stats.count - stats.reviewed} 笔。`;
         $("#analysis-metrics").innerHTML = `<div class="metric"><div class="metric-label">当前交易样本</div><div class="metric-value">${stats.count}</div><div class="metric-sub">不含未执行与已取消</div></div><div class="metric"><div class="metric-label">有最终结果</div><div class="metric-value">${stats.settled}</div><div class="metric-sub">盈利 ${stats.wins} / 亏损 ${stats.losses} / 持平 ${stats.flats}</div></div><div class="metric"><div class="metric-label">已结束胜率</div><div class="metric-value">${percent(stats.winRate)}</div><div class="metric-sub">盈利笔数 / 有结果的已结束笔数</div></div><div class="metric"><div class="metric-label">最终净盈亏</div><div class="metric-value compact-value">${currencyTotals(stats.currencies)}</div><div class="metric-sub">按整笔净额，分币种累计</div></div>`;
         $("#analysis-table").innerHTML = stats.count ? `<table class="analysis-table"><caption>按所选维度比较交易占比和最终结果</caption><thead><tr><th scope="col">分组</th><th scope="col">交易笔数</th><th scope="col">交易占比</th><th scope="col">有结果 / 待结果</th><th scope="col">盈 / 亏 / 平</th><th scope="col">胜率</th><th scope="col">净盈亏</th><th scope="col">平均每笔结果</th><th scope="col">占全部净亏损</th></tr></thead><tbody>${analysisRows(stats.groups, stats)}</tbody></table>` : '<div class="empty"><strong>还没有可比较的交易</strong>先记录一笔交易的心理状态；实际进场后计入样本，结束后补上盈亏。</div>';
         $("#discipline-table").innerHTML = stats.count ? `<table class="analysis-table"><caption>实际执行与结果对照</caption><thead><tr><th scope="col">最终执行情况</th><th scope="col">交易笔数</th><th scope="col">有结果 / 待结果</th><th scope="col">赚钱 / 亏损 / 持平</th><th scope="col">胜率</th><th scope="col">净盈亏</th></tr></thead><tbody>${analysisRows(stats.discipline, stats, false)}</tbody></table>` : "";
@@ -753,6 +787,7 @@ export default function useJournal() {
         }
         list.innerHTML = sorted
           .map((t) => {
+            if (t.psychology?.orderExecution) return orderExecutionMarkup(t);
             const executionRecord = isExecutionRecord(t);
             const result = tradeResult(t);
             const pnl = result.pnl;
@@ -853,6 +888,20 @@ export default function useJournal() {
           </details></article>`;
           })
           .join("");
+      }
+      function orderExecutionMarkup(t) {
+        const x = t.psychology.orderExecution;
+        const discipline = t.psychology.quickDiscipline || t.psychology.result?.discipline || "unknown";
+        const label = x.complete ? "已平仓" : x.startMissing ? "缺少期初开仓" : x.issue ? "数量或方向待核对" : "导出末尾未平完";
+        const net = x.moneyKnown ? amount(x.gross + x.fees, x.currency) : "金额待核对";
+        return `<article class="panel trade-card" data-id="${esc(t.id)}">
+          <div class="trade-top"><div><div class="trade-name"><h3>${esc(t.asset)}</h3><span class="tag">${esc(t.direction)}</span><span class="badge">${label}</span></div>
+          <div class="trade-date">${esc(t.createdAt)} → ${esc(x.lastAt)} · ${x.orders.length} 次委托执行</div></div>
+          <div class="trade-stats"><div><div class="metric-label">${x.complete ? "已平仓净额" : "范围内已实现净额"} · 不含资金费</div><div class="pnl ${x.gross + x.fees < 0 ? "negative" : "positive"}">${net}</div></div></div>
+          <p class="privacy">已实现盈亏 ${amount(x.gross,x.currency)} · 手续费 ${amount(x.fees,x.currency)}${x.complete ? "" : " · 范围未闭合，不计入完整交易胜率；不代表当前真实持仓。"}</p>
+          <div class="trade-controls"><span>规则核对（选填）：</span>${[["followed","按规则"],["partial","部分偏离"],["broken","明显违规"]].map(([value,label]) => `<button type="button" class="${discipline === value ? "primary" : "secondary"}" data-action="quick-discipline" data-value="${value}" aria-pressed="${discipline === value}">${label}</button>`).join("")}</div>
+          <form data-quick-review="${esc(t.id)}" class="trade-controls"><input name="review" aria-label="一句话复盘" placeholder="一句话复盘（选填，不填也能看全部数据）" value="${esc(t.review || "")}"><button type="submit" class="secondary">保存备注</button></form>
+          <details class="trade-details"><summary>展开开仓、加减仓与平仓明细</summary><div class="timeline">${x.orders.map(o => `<div class="event"><div>${esc(o['Order Time'])}</div><div><strong>${esc(({ 'Open long':'开多', 'Close long':'平多', 'Open short':'开空', 'Close short':'平空' })[o.Side] || o.Side)}</strong><div>${esc(o['Filled Amount'])} ${esc(o['Amount Unit'])} · 均价 ${amount(o['Avg. Filled Price'],o['Price Unit'])}</div><small>订单 ${esc(o['Order ID'])}</small></div><div>盈亏 ${amount(o.PNL,o['Price Unit'])}<br>费用 ${amount(o.Fee,o['Fee Unit'])}</div></div>`).join("")}</div></details></article>`;
       }
       function detail(label, value) {
         return `<div class="detail-cell"><strong>${label}</strong><div>${
@@ -1281,6 +1330,13 @@ export default function useJournal() {
         if (!card) return;
         const t = trades.find((x) => x.id === card.dataset.id);
         if (!t) return;
+        if (btn.dataset.action === "quick-discipline") {
+          t.psychology.quickDiscipline = btn.dataset.value;
+          if (t.psychology.result) t.psychology.result.discipline = btn.dataset.value;
+          t.updatedAt = stamp();
+          if (persist()) { render(); syncExecutions(); }
+          return;
+        }
         if (btn.dataset.action === "review") {
           const panel = card.querySelector("[data-review-panel]");
           panel.open = true;
@@ -1370,6 +1426,16 @@ export default function useJournal() {
         }
       });
       document.addEventListener("submit", (e) => {
+        const quick = e.target.closest("[data-quick-review]");
+        if (quick) {
+          e.preventDefault();
+          const t = trades.find(t => t.id === quick.dataset.quickReview);
+          if (!t) return;
+          t.review = String(new FormData(quick).get("review") || "").trim();
+          t.updatedAt = stamp();
+          if (persist()) { render(); syncExecutions(); }
+          return;
+        }
         const reviewForm = e.target.closest("[data-review-form]");
         if (reviewForm) {
           e.preventDefault();
@@ -1509,7 +1575,12 @@ export default function useJournal() {
         const file = e.target.files?.[0];
         if (!file) return;
         try {
-          const data = JSON.parse(await file.text());
+          const data = JSON.parse((await file.text()).replace(/^\uFEFF/, ""));
+          if (data?.schema === ORDER_HISTORY_KEY) {
+            importOrderHistory(data);
+            setTab("history-view");
+            return;
+          }
           const incoming = Array.isArray(data) ? data : data.trades;
           if (!Array.isArray(incoming)) throw new Error("备份格式不正确");
           const existing = new Map(trades.filter((t) => t?.id).map((t) => [t.id, t]));
@@ -1588,6 +1659,36 @@ export default function useJournal() {
           e.target.value = "";
         }
       });
+      $("#clear-journal").addEventListener("click", async () => {
+        if (!cloudUser) {
+          alert("请先登录云端账号，再清空浏览器和云端复盘记录。");
+          return;
+        }
+        if (!confirm("永久清空当前账号云端和当前浏览器的全部交易与复盘记录及操作流水？此操作无法撤销。OKX 委托与成交数据会保留。")) return;
+        const button = $("#clear-journal");
+        button.disabled = true;
+        try {
+          // Fetch the current account's IDs, independent of visible filters.
+          const records = requireCloud(await cloudDb.from("trade_records").select("id")) || [];
+          for (const record of records) {
+            requireCloud(await cloudDb.from("trade_actions").delete().eq("trade_id", record.id));
+            requireCloud(await cloudDb.from("trade_records").delete().eq("id", record.id));
+          }
+          const remaining = requireCloud(await cloudDb.from("trade_records").select("id")) || [];
+          const remainingActions = requireCloud(await cloudDb.from("trade_actions").select("id")) || [];
+          if (remaining.length || remainingActions.length) throw new Error("云端仍有记录或流水，请重试清空");
+          localStorage.setItem(STORE, "[]");
+          localStorage.removeItem(LEGACY);
+          localSnapshot = [];
+          trades = [];
+          editingId = null;
+          render();
+          cloudMessage("浏览器和云端交易与复盘记录及流水已全部清空；OKX 委托与成交数据已保留。");
+        } catch (error) {
+          try { await cloudLoad(); } catch {}
+          cloudMessage("清空未完成，可能已有部分记录删除，请重试：" + error.message);
+        } finally { button.disabled = false; }
+      });
       $("#cloud-login").addEventListener("click", cloudLogin);
       $("#cloud-register").addEventListener("click", cloudRegister);
       $("#cloud-password").addEventListener("keydown", (e) => {
@@ -1600,6 +1701,7 @@ export default function useJournal() {
           if (result?.error) throw result.error;
           cloudUser = null;
           trades = structuredClone(localSnapshot);
+          mergeSavedOrders();
           persist();
           render();
           $("#cloud-user-controls").classList.add("hidden");
@@ -1609,6 +1711,18 @@ export default function useJournal() {
           cloudReport(error);
         }
       });
+      window.addEventListener(ORDER_HISTORY_EVENT, () => {
+        mergeSavedOrders();
+        persist();
+        $("#record-type-filter").value = "all";
+        $("#analysis-stage").value = "all";
+        render();
+        setTab("history-view");
+        syncExecutions();
+      });
+      mergeSavedOrders();
+      persist();
+      if (trades.length) { setTab("history-view"); $("#analysis-stage").value = "all"; }
       journalDates.trade = today();
       addPosition();
       render();

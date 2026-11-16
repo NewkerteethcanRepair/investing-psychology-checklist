@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test": "node tests/journalAnalysis.test.mjs && node tests/opportunityAnalysis.test.mjs",
+    "test": "node tests/journalAnalysis.test.mjs && node tests/opportunityAnalysis.test.mjs && node tests/orderHistoryAnalysis.test.mjs && node tests/orderExecutions.test.mjs",
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint"

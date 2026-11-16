@@ -13,7 +13,7 @@
           导出备份
         </button>
         <button id="import-btn" class="secondary" type="button">
-          导入备份
+          导入数据 / 备份
         </button>
         <input
           id="import-file"
@@ -25,6 +25,7 @@
     </header>
 
     <CloudSyncPanel />
+    <OrderSummary />
     <TradeSummary />
 
     <nav class="tabs" aria-label="交易日志导航">
@@ -35,6 +36,7 @@
         交易与复盘 <span id="history-count">0</span>
       </button>
       <button class="tab" data-tab="analysis-view" type="button">心理与结果分析</button>
+      <button class="tab" data-tab="orders-view" type="button">原始委托明细</button>
     </nav>
 
     <section id="new-view" class="view active">
@@ -48,6 +50,7 @@
 
     <TradeHistory />
     <PsychologyAnalysis />
+    <OrderHistory />
     <div id="edit-modal" class="edit-modal hidden" aria-hidden="true">
       <section class="edit-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
         <header class="edit-modal-head">
@@ -71,10 +74,12 @@ import TradeSummary from "./components/TradeSummary.vue";
 import TradeHistory from "./components/TradeHistory.vue";
 import useJournal from "./composables/useJournal.js";
 import PsychologyAnalysis from "./components/PsychologyAnalysis.vue";
+import OrderHistory from "./components/OrderHistory.vue";
+import OrderSummary from "./components/OrderSummary.vue";
 
 export default {
   name: "App",
-  components: { TradeEntryForm, CloudSyncPanel, TradeSummary, TradeHistory, PsychologyAnalysis },
+  components: { TradeEntryForm, CloudSyncPanel, TradeSummary, TradeHistory, PsychologyAnalysis, OrderHistory, OrderSummary },
   setup() {
     useJournal();
   },

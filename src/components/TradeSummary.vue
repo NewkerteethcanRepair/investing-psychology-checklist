@@ -1,8 +1,67 @@
 <template>
-  <section class="summary" aria-label="心理交易日志汇总">
-    <div class="metric"><div class="metric-label">已执行交易</div><div id="sample-count" class="metric-value">0</div><div class="metric-sub">持仓中 + 已结束，每笔计一次</div></div>
-    <div class="metric"><div class="metric-label">待补结果 / 复盘</div><div id="review-count" class="metric-value">0</div><div class="metric-sub">已结束，缺盈亏或执行核对</div></div>
-    <div class="metric"><div class="metric-label">已结束交易净盈亏</div><div id="settled-pnl" class="metric-value compact-value">—</div><div class="metric-sub">分币种显示，以最终净额为准</div></div>
-    <div class="metric"><div class="metric-label">完全守规则占比</div><div id="discipline-rate" class="metric-value">—</div><div id="discipline-scope" class="metric-sub">以已结束且已核对规则的交易为分母</div></div>
+  <section aria-label="心理交易日志汇总">
+    <h2>交易与复盘统计</h2>
+    <p
+      id="journal-summary-empty"
+      class="privacy"
+    >
+      导入一次即可自动整理交易、计算盈亏，不需要先填写复盘表单。
+    </p>
+    <div
+      id="journal-summary-metrics"
+      class="summary hidden"
+    >
+      <div class="metric">
+        <div class="metric-label">
+          已整理交易组
+        </div><div
+          id="sample-count"
+          class="metric-value"
+        >
+          0
+        </div><div class="metric-sub">
+          含已平仓与范围未闭合的交易组
+        </div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">
+          范围待核对
+        </div><div
+          id="review-count"
+          class="metric-value"
+        >
+          0
+        </div><div class="metric-sub">
+          缺少开仓、未平完或金额不完整
+        </div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">
+          完整交易扣费后盈亏
+        </div><div
+          id="settled-pnl"
+          class="metric-value compact-value"
+        >
+          —
+        </div><div class="metric-sub">
+          仅范围完整的已平仓交易，不含资金费
+        </div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">
+          已平仓胜率
+        </div><div
+          id="discipline-rate"
+          class="metric-value"
+        >
+          —
+        </div><div
+          id="discipline-scope"
+          class="metric-sub"
+        >
+          自动计算，不需要填写心理或复盘
+        </div>
+      </div>
+    </div>
   </section>
 </template>
