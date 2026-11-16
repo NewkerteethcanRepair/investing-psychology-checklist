@@ -238,7 +238,7 @@ header {
   font-size: 11px;
   margin-top: 5px;
 }
-.field input,
+.field input:not(.el-input__inner),
 .field textarea,
 .field select,
 .search {
@@ -254,14 +254,14 @@ header {
   min-height: 77px;
   resize: vertical;
 }
-.field input:focus,
+.field input:not(.el-input__inner):focus,
 .field textarea:focus,
 .field select:focus,
 .search:focus {
   border-color: var(--el-color-primary, #216b50);
   box-shadow: 0 0 0 3px rgba(33, 107, 80, 0.12);
 }
-.field input::placeholder,
+.field input:not(.el-input__inner)::placeholder,
 .field textarea::placeholder {
   color: #9aa39d;
 }
@@ -787,7 +787,7 @@ header {
 .analysis-panel { padding: 23px; }
 .analysis-filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin: 18px 0; }
 .analysis-filters label { font-size: 11px; font-weight: 650; color: var(--muted); }
-.analysis-filters input, .analysis-filters select { display: block; border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 9px; color: var(--ink); margin-top: 5px; max-width: 100%; }
+.analysis-filters input:not(.el-input__inner), .analysis-filters select { display: block; border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 9px; color: var(--ink); margin-top: 5px; max-width: 100%; }
 .analysis-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 18px 0 24px; }
 .analysis-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 24px 0 14px; }
 .analysis-heading h3, h3.analysis-heading { font-size: 15px; }
@@ -814,7 +814,7 @@ header {
   .mind-snapshot span { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
   .analysis-panel { padding: 16px; }
   .analysis-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .analysis-filters input, .analysis-filters select { width: 100%; min-width: 0; }
+  .analysis-filters input:not(.el-input__inner), .analysis-filters select { width: 100%; min-width: 0; }
   .analysis-filters label { min-width: 0; }
   .analysis-heading { flex-wrap: wrap; }
 }
@@ -826,3 +826,7 @@ header {
 .decision-inputs:disabled { opacity: .7; }
 #rule-template-editor .psych-intro { margin-top: 12px; }
 #save-rule-template { margin-top: 12px; }
+
+.journal-date-picker.el-date-editor { width: 100%; min-width: 0; height: 40px; }
+.analysis-filters .journal-date-picker { margin-top: 5px; max-width: 220px; }
+.journal-date-picker .el-input__wrapper { border-radius: 9px; }

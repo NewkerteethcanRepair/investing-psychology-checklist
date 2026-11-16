@@ -14,7 +14,7 @@
     </section>
     <section class="form-section">
       <div class="section-head batch-heading"><div><h3>01 · 这笔交易</h3><p>每笔单独记录，避免把不同心理混在一起。</p></div><el-button id="add-position" class="secondary" native-type="button">＋ 同状态的其他品种</el-button></div>
-      <div class="form-grid"><label class="field"><span>交易日期</span><input id="trade-date" name="date" type="date" required></label></div>
+      <div class="form-grid"><label class="field"><span>交易日期</span><el-date-picker id="trade-date" v-model="journalDates.trade" class="journal-date-picker" type="date" format="YYYY-MM-DD" value-format="YYYY-MM-DD" placeholder="选择交易日期" :editable="false" /></label></div>
       <div id="position-list" class="position-list" />
     </section>
     <RuleDecisionCard />
@@ -62,6 +62,7 @@
 </template>
 
 <script>
+import { journalDates } from "../composables/journalDates";
 import RuleDecisionCard from "./RuleDecisionCard.vue";
-export default { components: { RuleDecisionCard } };
+export default { components: { RuleDecisionCard }, setup: () => ({ journalDates }) };
 </script>

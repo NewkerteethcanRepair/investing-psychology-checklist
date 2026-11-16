@@ -1,4 +1,5 @@
-import { onMounted } from "vue";
+import { journalDates } from "./journalDates";
+import { onMounted, watch } from "vue";
 import { initDecisionCards } from "./decisionCards.mjs";
 import { analyzeTrades, BASES, DISCIPLINES, basisOf, disciplineOf, tradeResult } from "./journalAnalysis.mjs";
 
@@ -711,7 +712,7 @@ export default function useJournal() {
         const currencies = [...new Set(trades.filter(t => (["open", "closed"].includes(t.status) || t.psychology?.decisionCard)).map(t => t.psychology?.decisionCard?.currency || tradeResult(t).currency))].sort();
         currencySelect.innerHTML = '<option value="all">全部 · 分币种显示</option>' + currencies.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
         currencySelect.value = currencies.includes(selected) ? selected : "all";
-        const from = $("#analysis-from").value, to = $("#analysis-to").value;
+        const from = journalDates.from, to = journalDates.to;
         if (from && to && from > to) {
           $("#analysis-scope").textContent = "起始日期不能晚于结束日期。请调整筛选。";
           ["analysis-metrics", "analysis-table", "discipline-table", "opportunity-table"].forEach(id => $("#" + id).replaceChildren());
@@ -1049,7 +1050,7 @@ export default function useJournal() {
         $("#form-errors").classList.add("hidden");
         $$(".field-invalid, .check-invalid").forEach((el) => el.classList.remove("field-invalid", "check-invalid"));
         $("#trade-form").classList.remove("editing-mode");
-        $("#trade-date").value = today();
+        journalDates.trade = today();
         positionList.innerHTML = "";
         addPosition();
         $("#form-title").textContent = "记下此刻的自己";
@@ -1066,7 +1067,7 @@ export default function useJournal() {
         $("#edit-modal").setAttribute("aria-hidden", "false");
         $("#trade-form").classList.add("editing-mode");
         const f = $("#trade-form");
-        f.date.value = t.date || "";
+        journalDates.trade = t.date || "";
         f.timeframe.value = t.timeframe || "";
         f.thesis.value = t.thesis || "";
         positionList.innerHTML = "";
@@ -1114,7 +1115,7 @@ export default function useJournal() {
         let firstMissing = null;
         $("#form-errors").classList.add("hidden");
         $$(".field-invalid, .check-invalid").forEach((el) => el.classList.remove("field-invalid", "check-invalid"));
-        if (!f.date.value) {
+        if (!journalDates.trade) {
           missing.push("交易日期 / 计划日期");
           firstMissing ||= $("#trade-date");
           $("#trade-date").classList.add("field-invalid");
@@ -1158,7 +1159,7 @@ export default function useJournal() {
           return;
         }
         const shared = {
-          date: f.date.value,
+          date: journalDates.trade,
           timeframe: f.timeframe.value.trim(),
           thesis: f.thesis.value.trim(),
           psychology: {
@@ -1260,7 +1261,7 @@ export default function useJournal() {
       });
       $("#trade-form").addEventListener("reset", () =>
         setTimeout(() => {
-          if (!editingId) $("#trade-date").value = today();
+          if (!editingId) journalDates.trade = today();
           $("#urge-warning").classList.add("hidden");
           applyEntryStage();
         }, 0),
@@ -1469,12 +1470,13 @@ export default function useJournal() {
           render,
         ),
       );
-      ["analysis-from", "analysis-to", "analysis-stage", "analysis-currency", "analysis-dimension"].forEach(id =>
+      ["analysis-stage", "analysis-currency", "analysis-dimension"].forEach(id =>
         $("#" + id).addEventListener("change", renderAnalysis),
       );
+      watch(() => [journalDates.from, journalDates.to], renderAnalysis);
       $("#analysis-reset").addEventListener("click", () => {
-        $("#analysis-from").value = "";
-        $("#analysis-to").value = "";
+        journalDates.from = "";
+        journalDates.to = "";
         $("#analysis-stage").value = "before";
         $("#analysis-currency").value = "all";
         renderAnalysis();
@@ -1607,7 +1609,7 @@ export default function useJournal() {
           cloudReport(error);
         }
       });
-      $("#trade-date").value = today();
+      journalDates.trade = today();
       addPosition();
       render();
       cloudInit();

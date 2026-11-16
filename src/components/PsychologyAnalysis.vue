@@ -5,8 +5,8 @@
         <div><h2>我的心理，最后带来了什么？</h2><p>把每笔交易的当时状态，与最终结果放在一起看。</p></div>
       </div>
       <div class="analysis-filters">
-        <label>交易日期从<input id="analysis-from" type="date"></label>
-        <label>到<input id="analysis-to" type="date"></label>
+        <label>交易日期从<el-date-picker id="analysis-from" v-model="journalDates.from" class="journal-date-picker" type="date" format="YYYY-MM-DD" value-format="YYYY-MM-DD" placeholder="开始日期" :editable="false" /></label>
+        <label>到<el-date-picker id="analysis-to" v-model="journalDates.to" class="journal-date-picker" type="date" format="YYYY-MM-DD" value-format="YYYY-MM-DD" placeholder="结束日期" :editable="false" /></label>
         <label>记录时机<select id="analysis-stage"><option value="before">下单前记录</option><option value="all">全部时机（含补记）</option><option value="after">下单后补记</option><option value="unknown">时机未记录 / 导入</option></select></label>
         <label>盈亏币种<select id="analysis-currency"><option value="all">全部 · 分币种显示</option></select></label>
         <button id="analysis-reset" class="secondary" type="button">重置筛选</button>
@@ -27,3 +27,7 @@
     </div>
   </section>
 </template>
+
+<script setup>
+import { journalDates } from "../composables/journalDates";
+</script>
