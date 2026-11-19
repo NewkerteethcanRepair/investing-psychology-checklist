@@ -1,3 +1,4 @@
+import { mountQuickRecord } from "./quickRecord";
 import { buildOrderExecutions, mergeOrderExecutions } from "./orderExecutions.mjs";
 import { ORDER_HISTORY_EVENT, ORDER_HISTORY_KEY, validateOrderHistory, importOrderHistory } from "./orderHistory.mjs";
 import { journalDates } from "./journalDates";
@@ -586,6 +587,22 @@ export default function useJournal() {
       }
 
       const decisionCards = initDecisionCards({ $, esc, id, stamp, getTrades: () => trades });
+      const refreshQuickAssets = mountQuickRecord($("#quick-record"), {
+        getTrades: () => trades, id, today, stamp,
+        save(trade) {
+          trades.unshift(trade);
+          if (!persist()) { trades.shift(); return false; }
+          render();
+          if (cloudUser) {
+            cloudWriteTrade(trade, true)
+              .then(async () => {
+                for (const action of trade.actions) await cloudWriteAction(trade, action);
+              })
+              .catch(cloudReport);
+          }
+          return true;
+        },
+      });
 
       function load() {
         try {
@@ -632,6 +649,7 @@ export default function useJournal() {
       function persist() {
         try {
           localStorage.setItem(STORE, JSON.stringify(trades));
+          if (!cloudUser) localSnapshot = structuredClone(trades);
           window.dispatchEvent(new Event("journal-updated"));
           return true;
         } catch {
@@ -761,6 +779,7 @@ export default function useJournal() {
         $("#discipline-table").innerHTML = stats.count ? `<table class="analysis-table"><caption>实际执行与结果对照</caption><thead><tr><th scope="col">最终执行情况</th><th scope="col">交易笔数</th><th scope="col">有结果 / 待结果</th><th scope="col">赚钱 / 亏损 / 持平</th><th scope="col">胜率</th><th scope="col">净盈亏</th></tr></thead><tbody>${analysisRows(stats.discipline, stats, false)}</tbody></table>` : "";
       }
       function render() {
+        refreshQuickAssets();
         renderSummary();
         renderAnalysis();
         const query = $("#search").value.trim().toLowerCase();
@@ -1722,7 +1741,7 @@ export default function useJournal() {
       });
       mergeSavedOrders();
       persist();
-      if (trades.length) { setTab("history-view"); $("#analysis-stage").value = "all"; }
+      if (trades.length) $("#analysis-stage").value = "all";
       journalDates.trade = today();
       addPosition();
       render();

@@ -830,3 +830,13 @@ header {
 .journal-date-picker.el-date-editor { width: 100%; min-width: 0; height: 40px; }
 .analysis-filters .journal-date-picker { margin-top: 5px; max-width: 220px; }
 .journal-date-picker .el-input__wrapper { border-radius: 9px; }
+.quick-entry { padding: 20px; margin-bottom: 16px; }
+.quick-entry h2 { margin: 0 0 12px; }
+.quick-entry h3 { margin: 12px 0; }
+.quick-entry .field { max-width: 28rem; }
+.quick-entry-list { display: grid; gap: 5px; }
+.quick-entry-list .check { min-height: 40px; align-items: center; }
+.quick-options { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.quick-options:empty, .quick-entry p:empty, .quick-entry [hidden] { display: none; }
+.quick-entry p { margin: 12px 0; }
+.quick-detail > summary { cursor: pointer; padding: 12px 2px; font-weight: 600; }

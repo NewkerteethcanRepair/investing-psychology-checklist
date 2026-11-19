@@ -6,7 +6,7 @@
     "test": "node tests/journalAnalysis.test.mjs && node tests/opportunityAnalysis.test.mjs && node tests/orderHistoryAnalysis.test.mjs && node tests/orderExecutions.test.mjs",
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "lint": "vue-cli-service lint --ext .js,.vue,.mjs"
   },
   "dependencies": {
     "core-js": "^3.8.3",

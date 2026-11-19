@@ -86,13 +86,13 @@ export default {
     catch { message = '本机数据读取失败，请重新导入文件。'; }
     return { orders: data.orders, unmatched: data.unmatchedFills, period: data.period, message, query: '', status: '' };
   },
-  mounted() { window.addEventListener(ORDER_HISTORY_EVENT, this.receiveImport); },
-  beforeUnmount() { window.removeEventListener(ORDER_HISTORY_EVENT, this.receiveImport); },
   computed: {
     statuses() { return [...new Set(this.orders.map(o => o.Status))]; },
     fillCount() { return this.orders.reduce((sum, o) => sum + o.fills.length, this.unmatched.length); },
     filtered() { const q = this.query.trim().toLowerCase(); return this.orders.filter(o => (!this.status || o.Status === this.status) && (!q || [o.Symbol, o['Order ID'], o.Side, this.sideName(o.Side)].join(' ').toLowerCase().includes(q))).slice().sort((a,b) => b['Order Time'].localeCompare(a['Order Time'])); },
   },
+  mounted() { window.addEventListener(ORDER_HISTORY_EVENT, this.receiveImport); },
+  beforeUnmount() { window.removeEventListener(ORDER_HISTORY_EVENT, this.receiveImport); },
   methods: {
     amount(value) {
       if (value == null || String(value).trim() === '' || !Number.isFinite(Number(value))) return '—';
