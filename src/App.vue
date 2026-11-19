@@ -40,6 +40,7 @@
     </nav>
 
     <section id="new-view" class="view active">
+      <QuickEntryCheck />
       <div id="trade-form-home"><TradeEntryForm /></div>
       <div class="notice">
         未登录时记录保存在当前浏览器；登录后会同步到 CloudBase
@@ -69,6 +70,7 @@
 
 <script>
 import TradeEntryForm from "./components/TradeEntryForm.vue";
+import QuickEntryCheck from "./components/QuickEntryCheck.vue";
 import CloudSyncPanel from "./components/CloudSyncPanel.vue";
 import TradeSummary from "./components/TradeSummary.vue";
 import TradeHistory from "./components/TradeHistory.vue";
@@ -79,7 +81,7 @@ import OrderSummary from "./components/OrderSummary.vue";
 
 export default {
   name: "App",
-  components: { TradeEntryForm, CloudSyncPanel, TradeSummary, TradeHistory, PsychologyAnalysis, OrderHistory, OrderSummary },
+  components: { QuickEntryCheck, TradeEntryForm, CloudSyncPanel, TradeSummary, TradeHistory, PsychologyAnalysis, OrderHistory, OrderSummary },
   setup() {
     useJournal();
   },
