@@ -91,14 +91,8 @@
         <label class="field full"><span>我额外相信什么？为什么改变？</span><textarea
           name="interventionReason"
           placeholder="例如：规则还没确认，但我认为不会再回踩；如果不加这个判断，我会继续等。"
-        /><small>有干预时必填；结果出来后保留原文。</small></label>
+        /><small>有干预时填写。</small></label>
       </div>
     </fieldset>
-    <p
-      id="decision-lock-notice"
-      class="psych-intro hidden"
-    >
-      该机会的规则版本、A / C 决定、理由、心理状态和参考风险已冻结。新想法请另建记录，避免用结果改写事前判断。
-    </p>
   </section>
 </template>

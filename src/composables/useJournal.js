@@ -1,4 +1,4 @@
-import { mountQuickRecord } from "./quickRecord";
+import { mountQuickRecord, quickMotiveLabel } from "./quickRecord";
 import { buildOrderExecutions, mergeOrderExecutions } from "./orderExecutions.mjs";
 import { ORDER_HISTORY_EVENT, ORDER_HISTORY_KEY, validateOrderHistory, importOrderHistory } from "./orderHistory.mjs";
 import { journalDates } from "./journalDates";
@@ -587,22 +587,29 @@ export default function useJournal() {
       }
 
       const decisionCards = initDecisionCards({ $, esc, id, stamp, getTrades: () => trades });
-      const refreshQuickAssets = mountQuickRecord($("#quick-record"), {
-        getTrades: () => trades, id, today, stamp,
-        save(trade) {
-          trades.unshift(trade);
-          if (!persist()) { trades.shift(); return false; }
+      const quickWrites = new Map();
+      function saveQuickTrade(trade, previous, delta) {
+          const index = previous ? trades.indexOf(previous) : 0;
+          if (index < 0) return false;
+          trades.splice(index, previous ? 1 : 0, trade);
+          if (!persist()) {
+            trades.splice(index, 1, ...(previous ? [previous] : []));
+            return false;
+          }
           render();
           if (cloudUser) {
-            cloudWriteTrade(trade, true)
-              .then(async () => {
-                for (const action of trade.actions) await cloudWriteAction(trade, action);
-              })
-              .catch(cloudReport);
+            const pending = (quickWrites.get(trade.id) || Promise.resolve()).then(async () => {
+              await cloudWriteTrade(trade, !previous);
+              if (delta.added) await cloudWriteAction(trade, delta.added);
+              if (delta.changed) requireCloud(await cloudDb.from("trade_actions").update({note: encodeActionNote(delta.changed)}).eq("id", delta.changed.id));
+              if (delta.removed) requireCloud(await cloudDb.from("trade_actions").delete().eq("id", delta.removed));
+            });
+            quickWrites.set(trade.id, pending);
+            pending.catch(cloudReport).finally(() => { if (quickWrites.get(trade.id) === pending) quickWrites.delete(trade.id); });
           }
           return true;
-        },
-      });
+      }
+      const quickRecord = mountQuickRecord($("#quick-record"), {getTrades: () => trades, id, today, stamp, save: saveQuickTrade});
 
       function load() {
         try {
@@ -729,6 +736,11 @@ export default function useJournal() {
         const values = Object.entries(currencies).sort(([a], [b]) => a.localeCompare(b));
         return values.length ? values.map(([currency, values]) => `<span class="currency-total ${values[field] < 0 ? "negative" : values[field] > 0 ? "positive" : ""}">${amount(average ? values[field] / values.count : values[field], currency)}</span>`).join("") : "—";
       }
+      function confirmedEntry(t) {
+        if (t.status !== "open" || t.psychology?.result || t.actions?.length !== 1) return null;
+        const action = t.actions[0];
+        return action.type === "entry" && action.note === "已确认实际进场；当时心理记录保留。" && action.pnl == null && !action.price && !action.size && action.unrealizedPnl == null ? action : null;
+      }
       function needsReview(t) {
         const opportunity = decisionCards.opportunityResult(t);
         if (t.psychology?.orderExecution) return false;
@@ -779,7 +791,7 @@ export default function useJournal() {
         $("#discipline-table").innerHTML = stats.count ? `<table class="analysis-table"><caption>实际执行与结果对照</caption><thead><tr><th scope="col">最终执行情况</th><th scope="col">交易笔数</th><th scope="col">有结果 / 待结果</th><th scope="col">赚钱 / 亏损 / 持平</th><th scope="col">胜率</th><th scope="col">净盈亏</th></tr></thead><tbody>${analysisRows(stats.discipline, stats, false)}</tbody></table>` : "";
       }
       function render() {
-        refreshQuickAssets();
+        quickRecord.refreshAssets();
         renderSummary();
         renderAnalysis();
         const query = $("#search").value.trim().toLowerCase();
@@ -845,10 +857,10 @@ export default function useJournal() {
             .map((x) => `<span class="tag">${esc(x)}</span>`)
             .join("")}</div>
           ${decisionCards.snapshot(t)}
-          <div class="mind-snapshot"><span><small>当时动机</small><strong>${esc(BASES[basisOf(t)])}</strong></span><span><small>情绪 / 冲动</small><strong>${esc(t.psychology?.emotion || "未记录")} · ${t.psychology?.urgeScore == null ? "强度未填" : esc(t.psychology.urgeScore) + "/10"}</strong></span><span><small>最终规则执行</small><strong>${esc(DISCIPLINES[disciplineOf(t)])}</strong></span></div>
-          <div class="trade-controls">${(t.status === "planned" || t.status === "skipped") ? '<button class="primary" data-action="quick-entry" type="button">已进场，开始跟踪</button>' : ""}<button class="primary" data-action="review" type="button">${needsReview(t) ? "补结果 / 核对规则" : t.status === "closed" ? "查看 / 修改复盘" : "结束 / 复盘"}</button></div>
+          <div class="mind-snapshot"><span><small>当时动机</small><strong>${esc(quickMotiveLabel(t.psychology?.quickRecord) || BASES[basisOf(t)])}</strong></span><span><small>情绪 / 冲动</small><strong>${esc(t.psychology?.emotion || "未记录")} · ${t.psychology?.urgeScore == null ? "强度未填" : esc(t.psychology.urgeScore) + "/10"}</strong></span><span><small>最终规则执行</small><strong>${esc(DISCIPLINES[disciplineOf(t)])}</strong></span></div>
+          <div class="trade-controls"><button class="secondary" data-action="edit" type="button">修改下单记录</button>${(t.status === "planned" || t.status === "skipped") ? '<button class="primary" data-action="quick-entry" type="button">确认已进场</button>' : confirmedEntry(t) ? '<button class="quiet" data-action="undo-entry" type="button">撤销进场确认</button>' : ""}<button class="primary" data-action="review" type="button">${needsReview(t) ? "补结果 / 核对规则" : t.status === "closed" ? "查看 / 修改复盘" : "结束 / 复盘"}</button></div>
           ${reviewMarkup(t)}
-          ${executionRecord ? '<div class="trade-controls"><span class="tag">OKX 导入 · 事后数据</span></div>' : `<div class="trade-controls"><label class="status-control">当前状态<select data-status-for="${esc(t.id)}" aria-label="修改${esc(t.asset || "该记录")}状态"><option value="skipped" ${t.status === "skipped" ? "selected" : ""}>已跳过机会</option><option value="planned" ${t.status === "planned" ? "selected" : ""}>计划中</option><option value="open" ${t.status === "open" ? "selected" : ""}>持仓中</option><option value="closed" ${t.status === "closed" ? "selected" : ""}>已结束</option><option value="cancelled" ${t.status === "cancelled" ? "selected" : ""}>已取消</option></select></label><button class="secondary" data-action="edit" type="button">编辑当时状态</button><button class="danger" data-action="delete" type="button">删除记录</button></div>`}
+          ${executionRecord ? '<div class="trade-controls"><span class="tag">OKX 导入 · 事后数据</span></div>' : `<div class="trade-controls"><label class="status-control">当前状态<select data-status-for="${esc(t.id)}" aria-label="修改${esc(t.asset || "该记录")}状态"><option value="skipped" ${t.status === "skipped" ? "selected" : ""}>已跳过机会</option><option value="planned" ${t.status === "planned" ? "selected" : ""}>计划中</option><option value="open" ${t.status === "open" ? "selected" : ""}>持仓中</option><option value="closed" ${t.status === "closed" ? "selected" : ""}>已结束</option><option value="cancelled" ${t.status === "cancelled" ? "selected" : ""}>已取消</option></select></label><button class="danger" data-action="delete" type="button">删除记录</button></div>`}
           <details class="trade-details"><summary>${executionRecord ? "执行数据与盈亏详情" : "当时记录与操作流水"}</summary>
             <div class="detail-grid">
               ${detail("交易理由", t.thesis)}${detail(
@@ -930,7 +942,7 @@ export default function useJournal() {
       function reviewMarkup(t) {
         const result = t.psychology?.result || {};
         const calculated = tradeResult(t);
-        const skippedOpportunity = decisionCards.opportunityResult(t)?.skipped;
+        const skippedOpportunity = t.status === "skipped" && !(t.actions || []).some(a => ["entry", "add"].includes(a.type));
         return `<details class="review-panel" data-review-panel><summary>整笔结果与执行复盘${needsReview(t) ? " · 待补全" : ""}</summary>
           <p class="psych-intro">填写含手续费、资金费等成本的整笔最终净盈亏。这个数会替代流水合计，不会再与减仓 / 平仓盈亏相加。${skippedOpportunity ? "本次未持仓，C 收益固定为 0，保存后保留已跳过状态。" : "保存后标记为已结束。"}</p>
           <form data-review-form="${esc(t.id)}" class="form-grid">
@@ -959,7 +971,7 @@ export default function useJournal() {
         return [
           p.stage === "after" ? "下单后补记" : p.stage === "before" ? "下单前记录" : "记录时机未填写",
           p.recordedAt ? `记录时间：${formatTime(p.recordedAt)}` : "",
-          `主要动机：${BASES[p.decisionBasis] || "未记录"}`,
+          `下单动机：${quickMotiveLabel(p.quickRecord) || BASES[p.decisionBasis] || "未记录"}`,
           p.entryDiscipline ? `入场规则情况：${DISCIPLINES[p.entryDiscipline] || "未记录"}` : "",
           p.ruleReference ? `对照规则：${p.ruleReference}` : "",
           p.stateNote ? `当时原话：${p.stateNote}` : "",
@@ -1179,7 +1191,9 @@ export default function useJournal() {
           risk: f.gateRisk.checked,
           accept: f.gateAccept.checked && !(entryStage === "before" && urgeScore >= 7),
         };
-        const missing = decisionCards.validate(editingId);
+        const original = trades.find(t => t.id === editingId);
+        const hasCard = !editingId || !!original?.psychology?.decisionCard || !!f.actualDecision.value;
+        const missing = hasCard ? decisionCards.validate() : [];
         let firstMissing = null;
         $("#form-errors").classList.add("hidden");
         $$(".field-invalid, .check-invalid").forEach((el) => el.classList.remove("field-invalid", "check-invalid"));
@@ -1233,7 +1247,7 @@ export default function useJournal() {
           psychology: {
             ...trades.find((x) => x.id === editingId)?.psychology,
             opportunitySkipped: editingId ? !!trades.find(x => x.id === editingId)?.psychology?.opportunitySkipped : f.actualDecision.value === "skip",
-            decisionCard: editingId ? trades.find(x => x.id === editingId)?.psychology?.decisionCard : decisionCards.capture(entryStage),
+            decisionCard: hasCard ? decisionCards.capture(entryStage) : null,
             stage: entryStage,
             gates,
             gateOutcome: entryStage === "before" ? (Object.values(gates).every(Boolean) ? "passed" : "not-checked") : "after-entry",
@@ -1253,8 +1267,15 @@ export default function useJournal() {
             skipped: f.skipped.value.trim(),
           },
         };
-        const originalPsychology = trades.find(x => x.id === editingId)?.psychology;
-        if (originalPsychology?.decisionCard) shared.psychology = structuredClone(originalPsychology);
+        const previousCard = original?.psychology?.decisionCard;
+        const card = shared.psychology.decisionCard;
+        if (previousCard && card) {
+          card.capturedAt = previousCard.capturedAt;
+          if (JSON.stringify(previousCard) !== JSON.stringify(card)) {
+            shared.psychology.originalDecisionCard ||= structuredClone(previousCard);
+            if (shared.psychology.result) shared.psychology.result = {...shared.psychology.result, comparisonConfirmed: false};
+          }
+        }
         const items = rows.map((row) => {
           const value = (key) => row.querySelector(`[data-key="${key}"]`).value.trim();
           const entryPrice = value("entryPrice");
@@ -1289,7 +1310,14 @@ export default function useJournal() {
         const savedTrades = [];
         if (editingId) {
           const saved = trades.find((x) => x.id === editingId);
-          if (saved) { Object.assign(saved, items[0], { updatedAt: stamp() }); savedTrades.push(saved); }
+          if (saved) {
+            if (card && previousCard?.actual !== card.actual && ["planned", "skipped"].includes(saved.status) && !saved.actions?.length) {
+              saved.status = card.actual === "skip" ? "skipped" : "planned";
+              items[0].psychology.opportunitySkipped = saved.status === "skipped";
+            }
+            Object.assign(saved, items[0], { updatedAt: stamp() });
+            savedTrades.push(saved);
+          }
           $("#form-status").textContent = "当时状态已更新，原有操作流水和结束复盘保留。";
         } else {
           const alreadyEntered = entryStage === "after";
@@ -1309,6 +1337,7 @@ export default function useJournal() {
         if (persist()) {
           render();
           resetForm();
+          quickRecord.notifySaved(isNew ? "保存成功 · " + savedTrades.length + " 条记录" : "修改已保存");
           if (cloudUser && savedTrades.length)
             Promise.all(savedTrades.map(async (saved) => {
               await cloudWriteTrade(saved, isNew);
@@ -1362,20 +1391,21 @@ export default function useJournal() {
           panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
           panel.querySelector("input").focus({ preventScroll: true });
         }
-        if (btn.dataset.action === "quick-entry" && ["planned", "skipped"].includes(t.status)) {
-          const action = { id: id(), at: stamp(), type: "entry", note: "已确认实际进场；当时心理记录保留。", pnl: null };
-          invalidateReview(t, "entry");
-          t.actions ||= [];
-          t.actions.push(action);
-          t.status = "open";
-          t.psychology.opportunitySkipped = false;
-          t.updatedAt = stamp();
-          if (persist()) {
-            render();
-            if (cloudUser) cloudWriteAction(t, action).catch(cloudReport);
-          }
+        if (btn.dataset.action === "quick-entry") quickRecord.confirmEntry(t);
+        if (btn.dataset.action === "undo-entry" && confirmedEntry(t)) {
+          const next = structuredClone(t);
+          const previous = next.psychology.entryPreviousStatus || (next.psychology.quickRecord?.decision === "skipped" || next.psychology.decisionCard?.actual === "skip" ? "skipped" : "planned");
+          const action = next.actions.pop();
+          next.status = previous;
+          next.psychology.opportunitySkipped = previous === "skipped";
+          delete next.psychology.entryPreviousStatus;
+          next.updatedAt = stamp();
+          saveQuickTrade(next, t, {removed: action.id});
         }
-        if (btn.dataset.action === "edit") startEdit(t);
+        if (btn.dataset.action === "edit") {
+          if (t.psychology?.quickRecord) quickRecord.openEdit(t);
+          else startEdit(t);
+        }
         if (btn.dataset.action === "edit-event") {
           const action = t.actions.find((item) => item.id === btn.dataset.eventId);
           const row = btn.closest(".event");
@@ -1462,7 +1492,7 @@ export default function useJournal() {
           const t = trades.find(x => x.id === reviewForm.dataset.reviewForm);
           if (!t) return;
           const fd = new FormData(reviewForm);
-          const skipOpportunity = decisionCards.opportunityResult(t)?.skipped;
+          const skipOpportunity = t.status === "skipped" && !(t.actions || []).some(a => ["entry", "add"].includes(a.type));
           const netPnl = skipOpportunity ? 0 : Number(fd.get("netPnl"));
           const discipline = String(fd.get("discipline"));
           if (String(fd.get("netPnl")).trim() === "" || !Number.isFinite(netPnl) || !Object.hasOwn(DISCIPLINES, discipline)) return;
@@ -1482,6 +1512,7 @@ export default function useJournal() {
           t.updatedAt = stamp();
           if (persist()) {
             render();
+            quickRecord.notifySaved("复盘已保存 · " + t.asset);
             if (cloudUser) cloudWriteTrade(t).then(() => cloudMessage("整笔结果与执行复盘已同步。" )).catch(cloudReport);
           }
           return;

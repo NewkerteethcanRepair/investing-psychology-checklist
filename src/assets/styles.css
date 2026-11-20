@@ -840,3 +840,15 @@ header {
 .quick-options:empty, .quick-entry p:empty, .quick-entry [hidden] { display: none; }
 .quick-entry p { margin: 12px 0; }
 .quick-detail > summary { cursor: pointer; padding: 12px 2px; font-weight: 600; }
+
+.quick-dialog { width: min(460px, 92vw); max-height: 88vh; overflow: auto; box-sizing: border-box; border: 1px solid var(--line); border-radius: 12px; padding: 20px; color: inherit; }
+.quick-dialog::backdrop { background: rgb(0 0 0 / 38%); }
+.quick-choice { border: 0; padding: 0; margin: 12px 0; }
+.quick-choice label { padding: 6px 8px; cursor: pointer; }
+.quick-entry [data-checks], .quick-dialog [data-checks] { margin: 12px 0; }
+.quick-dialog summary, .quick-entry summary { cursor: pointer; }
+.quick-entry form > button { margin-top: 10px; }
+.quick-dialog .quick-entry-list { display: grid; gap: 5px; }
+.quick-dialog h2 { margin-top: 0; }
+.journal-save-toast { position: fixed; z-index: 10000; left: 50%; bottom: max(24px, env(safe-area-inset-bottom)); transform: translateX(-50%); max-width: 90vw; width: max-content; padding: 12px 20px; border-radius: 10px; background: #19533c; color: white; box-shadow: 0 4px 18px #0003; font-weight: 600; pointer-events: none; overflow-wrap: anywhere; }
+.journal-save-toast:empty { display: none; }

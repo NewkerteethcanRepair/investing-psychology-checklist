@@ -7,10 +7,6 @@ export function initDecisionCards({ $, esc, id, stamp, getTrades }) {
   let local = [];
   try { local = JSON.parse(localStorage.getItem(KEY) || "[]"); if (!Array.isArray(local)) local = []; } catch { /* Preserve the journal if a template cache is invalid. */ }
   const f = $("#trade-form"), field = name => f.elements.namedItem(name);
-  const psychologyFields = ["entryStage", "decisionBasis", "emotion", "urgeScore", "trigger", "stateNote", "entryDiscipline", "ruleReference", "skipped", "urgency", "impulse", "relief", "ruleBreak"];
-  function lockPsychology(locked) {
-    for (const name of psychologyFields) f.querySelectorAll(`[name="${name}"]`).forEach(el => { el.disabled = locked; });
-  }
   function templates() {
     const all = [...local, ...getTrades().map(t => t.psychology?.decisionCard?.template).filter(Boolean)];
     return [...new Map(all.filter(t => t?.id).map(t => [t.id, t])).values()];
@@ -38,23 +34,22 @@ export function initDecisionCards({ $, esc, id, stamp, getTrades }) {
   });
   field("ruleTemplate").addEventListener("change", preview);
   function reset() {
-    lockPsychology(false);
-    $("#decision-inputs").disabled = false; field("ruleTemplate").disabled = false;
-    $("#rule-template-editor").classList.remove("hidden");
-    $("#decision-lock-notice").classList.add("hidden"); refresh();
+    refresh();
   }
   function edit(t) {
     reset(); const card = t.psychology?.decisionCard;
-    if (!card) return;
+    if (!card) {
+      for (const name of ["ruleTemplate", "baselineDecision", "actualDecision", "intervention", "referenceRisk", "interventionReason"]) field(name).value = "";
+      field("comparisonCurrency").value = "USDT";
+      preview();
+      return;
+    }
     for (const [name, value] of Object.entries({ ruleTemplate: card.template?.id || "", baselineDecision: card.baseline,
       actualDecision: card.actual, intervention: card.intervention, comparisonCurrency: card.currency,
       referenceRisk: card.referenceRisk ?? "", interventionReason: card.reason })) field(name).value = value;
-    preview(); $("#decision-inputs").disabled = true; field("ruleTemplate").disabled = true;
-    lockPsychology(true);
-    $("#rule-template-editor").classList.add("hidden"); $("#decision-lock-notice").classList.remove("hidden");
+    preview();
   }
-  function validate(editingId) {
-    if (editingId) return [];
+  function validate() {
     const missing = [];
     for (const [name, label] of [["baselineDecision", "A：固定规则的决定"], ["actualDecision", "C：本次实际决定"], ["intervention", "对原规则的改变"]])
       if (!field(name).value) missing.push(label);
