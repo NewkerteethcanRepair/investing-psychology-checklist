@@ -1,6 +1,6 @@
 export const BASES = {
   rules: "规则信号", feeling: "纯靠感觉", impulse: "临时冲动",
-  fomo: "害怕错过", revenge: "想追回亏损", other: "其他", unknown: "未记录动机",
+  fomo: "害怕错过", revenge: "想追回亏损", mixed: "多种动机", other: "其他", unknown: "未记录动机",
 };
 export const DISCIPLINES = {
   followed: "完全按规则", partial: "部分偏离", broken: "明显违规",
